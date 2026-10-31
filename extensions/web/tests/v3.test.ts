@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Commands } from '../src/core/commands';
 import { WorldState } from '../src/core/state';
+import { ROOM_WIDTH, ROOM_HEIGHT } from '../src/core/room';
 import { MISSIONS } from '../src/data/missions';
 import { GUARDIANS, MAJOR_BOSS } from '../src/data/bosses';
 import { ROOM_LOCKS, KEY_CARDS } from '../src/data/world';
@@ -85,12 +86,37 @@ describe('missions and story arc', () => {
     slayBoss(world, mission.guardianBossId);
     expect(world.story.hasRecovered(mission.id)).toBe(true);
 
-    // Go to the install room and install.
+    // Go to the install room and stand on the install socket (room-center, center-1).
     world.player.roomKey = mission.installRoomKey;
+    world.player.x = Math.floor(ROOM_WIDTH / 2);
+    world.player.y = Math.floor(ROOM_HEIGHT / 2) - 1;
     world.apply(Commands.interact());
     world.tick(16);
     expect(world.story.installed.has(mission.id)).toBe(true);
     expect(world.missions.statusOf(mission.id)).toBe('complete');
+  });
+
+  it('does not show the install prompt when interacting away from the socket', () => {
+    const world = new WorldState({ seed: 2 });
+    world.story.beginRestoring();
+    const mission = MISSIONS[0];
+    const room = world.graph.rooms.get(mission.installRoomKey)!;
+    world.player.roomKey = mission.installRoomKey;
+
+    // Place a heal station adjacent to the player, far from the install socket.
+    world.player.x = 1;
+    world.player.y = 1;
+    room.props = [{ kind: 'healStation', x: 2, y: 1 }];
+
+    const messages: string[] = [];
+    world.events.on((e) => {
+      if (e.type === 'log') messages.push(e.message);
+    });
+    world.apply(Commands.interact());
+    world.tick(16);
+
+    // Interacting with the heal station must not surface the install prompt.
+    expect(messages.some((m) => m.includes('Install point'))).toBe(false);
   });
 
   it('activates the major boss only after all 7 components are installed', () => {

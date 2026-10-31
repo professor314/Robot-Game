@@ -539,7 +539,7 @@ export class WorldScene extends Phaser.Scene {
         this.audio.sfx('pickup');
         break;
       case 'mined':
-        this.onMined(e.roomKey, e.x, e.y);
+        this.onMined(e.roomKey, e.x, e.y, e.amount);
         break;
       case 'healed':
         this.audio.sfx('levelup');
@@ -653,8 +653,16 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** Remove a mined ore prop's sprite from the scene. */
-  private onMined(roomKey: string, x: number, y: number): void {
+  /**
+   * React to a mining hit. Intermediate hits (`amount === 0`) just play a chip SFX and leave
+   * the deposit on screen; only the final hit that breaks the deposit (`amount > 0`) removes
+   * its sprite — otherwise the ore vanishes after the first hit while Core still has it.
+   */
+  private onMined(roomKey: string, x: number, y: number, amount: number): void {
+    if (amount <= 0) {
+      this.audio.sfx('hit');
+      return;
+    }
     const key = `${roomKey}:${x},${y}`;
     const sprite = this.propSprites.get(key);
     if (sprite) {

@@ -786,6 +786,13 @@ export class WorldState {
     const mission = MISSIONS.find((m) => m.installRoomKey === room.key);
     if (!mission) return false;
     if (room.componentInstalled) return false;
+    // The install point is the socket at (room-center, center-1) — matches the rendered marker.
+    // Only act when the player is standing on or next to it, so pressing E elsewhere in the
+    // room (e.g. at a log terminal) falls through to the other interactions.
+    const p = this.player;
+    const ix = Math.floor(ROOM_WIDTH / 2);
+    const iy = Math.floor(ROOM_HEIGHT / 2) - 1;
+    if (Math.abs(p.x - ix) + Math.abs(p.y - iy) > 1) return false;
     if (!this.story.hasRecovered(mission.id)) {
       // In the install room but without the part yet.
       this.events.emit({
