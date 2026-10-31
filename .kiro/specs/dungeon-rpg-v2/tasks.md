@@ -42,10 +42,10 @@ Tasks are grouped by phase. Each phase leaves its deliverable buildable and runn
 
 ## Phase 5 — Deployment & Docs
 
-- [ ] 27. Configure Vite `base` for sub-path hosting; produce `dist/`; document embedding Robot-Game as a new page on the `imadestuff-blog` Hugo site. (Req 16)
-- [ ] 28. Root `README.md` (modeling-motion style): frames original / WinForms port / web game; structure diagram; run/build/test instructions; controls; theme + relationship to `space-mud`; improvements; known limitations. Document Agent_API with example. (Req 18.1, 18.2, 18.3)
-- [ ] 29. Create Obsidian project note `Projects/Robot-Game.md` with frontmatter (tags, status, code path, github) matching `modeling-motion.md`. (Req 18.4)
-- [ ] 30. Initialize git repo `Robot-Game`; `.gitignore` for bin/obj/node_modules/dist; initial commit. (Req 16.1)
+- [x] 27. Vite `base: './'` configured for sub-path hosting; `dist/` builds; README documents embedding Robot-Game as a page on the `imadestuff-blog` Hugo site (copy `dist/` to `static/robot-game/`, link or iframe). (Req 16)
+- [x] 28. Root `README.md` (modeling-motion style): frames original / WinForms port / web game; structure diagram; run/build/test; controls; theme + `space-mud` relationship; improvements; known limitations; Agent_API example. (Req 18.1, 18.2, 18.3)
+- [x] 29. Obsidian project note `Projects/Robot-Game.md` created with frontmatter (tags, status, code path, github) matching `modeling-motion.md`. (Req 18.4)
+- [x] 30. Git repo initialized on `main`; root `.gitignore` (bin/obj/node_modules/dist/editor/OS/playwright); initial commit `e3dd756`, 388 files, clean tree. (Req 16.1)
 
 ## Phase 6 — Multiplayer (later)
 
@@ -53,4 +53,4 @@ Tasks are grouped by phase. Each phase leaves its deliverable buildable and runn
 
 ## Consolidation / Housekeeping (do not forget)
 
-- [ ] C1. **Consolidate the project under one `#`-free folder named `Robot-Game`.** The Vite/Rollup web toolchain cannot build under a path containing `#` (the workspace is currently `C:\Users\profe\OneDrive\Desktop\C# Game`). As a temporary workaround the web game is being developed at `C:\Users\profe\My Drive\Programming\Robot-Game`. Later: bring `original/`, `extensions/csharp-winforms/`, `.kiro/`, and the web project together under a single `Robot-Game` root (rename the Desktop folder or move everything into the Programming repo), update the two path references in `.kiro/steering/user-context.md` and `.kiro/specs/dungeon-rpg-v2/design.md`, and reopen the workspace at the new path.
+- [x] C1. **Consolidated under one `#`-free root `Robot-Game`.** The workspace is now `C:\Users\profe\OneDrive\Desktop\Robot-Game` (no `#`), with `original/`, `extensions/csharp-winforms/`, `extensions/web/`, and `.kiro/` all under it; the web game builds/dev-serves from `extensions/web/`. Path references in `.kiro/steering/user-context.md` and `.kiro/specs/dungeon-rpg-v2/design.md` updated to the new root.
