@@ -60,9 +60,9 @@ off as completed.
 
 ## Phase 8 — Deployment (LAST)
 
-- [ ] 34. Build the web game; copy `dist/` into `imadestuff-blog/static/robot-game/`; add a small refresh helper so rebuilds are one command. (Req 14.1, 14.3)
-- [ ] 35. Add a play page on the Hugo site (link + iframe embed) and link it from the existing Robot-Game post. (Req 14.2)
-- [ ] 36. Deploy via the site's `deploy.sh` (S3 `--delete` sync + CloudFront invalidation); verify the game loads at its URL and the blog is intact. (Req 14.1, 14.3)
+- [x] 34. Build the web game; copy `dist/` into `imadestuff-blog/static/robot-game/`; add a small refresh helper so rebuilds are one command. (Req 14.1, 14.3)
+- [x] 35. Add a play page on the Hugo site (link + iframe embed) and link it from the existing Robot-Game post. (Req 14.2)
+- [x] 36. Deploy (S3 `--delete` sync + CloudFront invalidation); verify the game loads at its URL and the blog is intact. (Req 14.1, 14.3)
 
 ## Notes / carry-overs
 
