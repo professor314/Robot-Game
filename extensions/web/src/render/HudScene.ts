@@ -10,6 +10,12 @@ export const HUD_SCENE = 'Hud';
 /** Max lines kept in the scrolling event log. */
 const LOG_LINES = 6;
 
+/** Which key activates each usable skill (mirrors the WorldScene keybinds). */
+const SKILL_KEYS: Record<string, string> = {
+  overclock: 'Q',
+  repair: 'Z',
+};
+
 /** The controls shown in the on-screen controls box. */
 const CONTROLS: [string, string][] = [
   ['Move', 'WASD / Arrows'],
@@ -41,8 +47,14 @@ export class HudScene extends Phaser.Scene {
   private logText!: Phaser.GameObjects.Text;
   private controlsBox!: Phaser.GameObjects.Container;
   private inventoryBox!: Phaser.GameObjects.Container;
+  private inventoryBg!: Phaser.GameObjects.Rectangle;
   private inventoryText!: Phaser.GameObjects.Text;
   private inventoryOpen = false;
+  /** Scroll offset (px) and clip geometry for the inventory list. */
+  private inventoryScroll = 0;
+  private inventoryViewH = 320;
+  private readonly INV_PAD_TOP = 26;
+  private readonly INV_PAD_BOTTOM = 10;
   private craftBox!: Phaser.GameObjects.Container;
   private craftText!: Phaser.GameObjects.Text;
   private craftOpen = false;
@@ -126,15 +138,19 @@ export class HudScene extends Phaser.Scene {
     return c;
   }
 
+  /** Width of the on-screen controls box (wide enough for the longest key hint). */
+  private static readonly CONTROLS_W = 230;
+
   private buildControlsBox(): void {
-    this.controlsBox = this.panel(180, 24 + CONTROLS.length * 16 + 8, 'CONTROLS');
+    const w = HudScene.CONTROLS_W;
+    this.controlsBox = this.panel(w, 24 + CONTROLS.length * 16 + 8, 'CONTROLS');
     CONTROLS.forEach(([action, key], i) => {
       const y = 24 + i * 16;
       this.controlsBox.add(
         this.add.text(8, y, action, { fontFamily: 'monospace', fontSize: '11px', color: '#c8d0e0' }),
       );
       this.controlsBox.add(
-        this.add.text(172, y, key, {
+        this.add.text(w - 8, y, key, {
           fontFamily: 'monospace',
           fontSize: '11px',
           color: '#50fa7b',
@@ -143,22 +159,89 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  private static readonly INV_W = 280;
+
   private buildInventoryBox(): void {
-    this.inventoryBox = this.panel(260, 360, 'INVENTORY  (I to close)');
-    this.inventoryText = this.add.text(10, 26, '', {
+    const w = HudScene.INV_W;
+    this.inventoryBox = this.add.container(0, 0);
+    this.inventoryBg = this.add
+      .rectangle(0, 0, w, 360, 0x0c0c16, 0.9)
+      .setOrigin(0, 0)
+      .setStrokeStyle(1, 0x44475a);
+    const title = this.add.text(8, 6, 'INVENTORY  (I close · scroll / ↑↓)', {
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      color: '#8be9fd',
+    });
+    this.inventoryBox.add([this.inventoryBg, title]);
+    this.inventoryBox.setVisible(false);
+
+    // The scrolling list is a separate top-level text (not a container child), positioned in
+    // absolute scene coords so a geometry mask can clip it to the panel's content area.
+    this.inventoryText = this.add.text(10, this.INV_PAD_TOP, '', {
       fontFamily: 'monospace',
       fontSize: '12px',
       color: '#c8d0e0',
       lineSpacing: 3,
+      wordWrap: { width: HudScene.INV_W - 24 },
     });
-    this.inventoryBox.add(this.inventoryText);
-    this.inventoryBox.setVisible(false);
+    this.inventoryText.setVisible(false);
+    const maskShape = this.make.graphics({}, false);
+    this.inventoryText.setMask(maskShape.createGeometryMask());
+    this.inventoryMaskShape = maskShape;
+
+    // Scrolling input (only while the inventory is open).
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+      if (this.inventoryOpen) this.scrollInventory(dy > 0 ? 24 : -24);
+    });
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (!this.inventoryOpen) return;
+      if (ev.code === 'ArrowDown') { ev.preventDefault(); this.scrollInventory(24); }
+      else if (ev.code === 'ArrowUp') { ev.preventDefault(); this.scrollInventory(-24); }
+    });
+  }
+
+  private inventoryMaskShape!: Phaser.GameObjects.Graphics;
+
+  /** Scroll the inventory list by `delta` px, clamped to the content bounds. */
+  private scrollInventory(delta: number): void {
+    const maxScroll = Math.max(0, this.inventoryText.height - (this.inventoryViewH - this.INV_PAD_TOP - this.INV_PAD_BOTTOM));
+    this.inventoryScroll = Phaser.Math.Clamp(this.inventoryScroll + delta, 0, maxScroll);
+    this.positionInventoryText();
+  }
+
+  /** Place the list text at the current scroll offset, relative to the panel. */
+  private positionInventoryText(): void {
+    this.inventoryText.setY(this.inventoryBox.y + this.INV_PAD_TOP - this.inventoryScroll);
+    this.inventoryText.setX(this.inventoryBox.x + 10);
   }
 
   private toggleInventory(): void {
     this.inventoryOpen = !this.inventoryOpen;
     this.inventoryBox.setVisible(this.inventoryOpen);
-    if (this.inventoryOpen) this.refreshInventory();
+    this.inventoryText.setVisible(this.inventoryOpen);
+    if (this.inventoryOpen) {
+      this.inventoryScroll = 0;
+      this.layoutInventory();
+      this.refreshInventory();
+    }
+  }
+
+  /** Size the inventory panel to the space above the controls box and refresh the clip mask. */
+  private layoutInventory(): void {
+    const controlsH = 24 + CONTROLS.length * 16 + 8;
+    const top = 100;
+    const bottom = this.scale.height - controlsH - 20; // keep clear of the controls box
+    this.inventoryViewH = Math.max(160, bottom - top);
+    this.inventoryBox.setPosition(10, top);
+    this.inventoryBg.setSize(HudScene.INV_W, this.inventoryViewH);
+    // Mask covers the content area (below the title, above the panel bottom).
+    const mx = 10 + 2;
+    const my = top + this.INV_PAD_TOP - 2;
+    const mw = HudScene.INV_W - 4;
+    const mh = this.inventoryViewH - this.INV_PAD_TOP - this.INV_PAD_BOTTOM;
+    this.inventoryMaskShape.clear().fillStyle(0xffffff).fillRect(mx, my, mw, mh);
+    this.positionInventoryText();
   }
 
   /** Render the inventory contents: gear, skills, professions, and salvaged materials. */
@@ -173,23 +256,34 @@ export class HudScene extends Phaser.Scene {
     const keys = [...this.world.state.keys];
     lines.push(`Key cards: ${keys.length ? keys.join(', ') : 'none'}`);
     lines.push('');
-    lines.push('Skills:');
+    lines.push('Skills (press the key to use):');
     for (const s of prog.skills) {
-      const ready = s.remainingMs <= 0 ? 'ready' : `${Math.ceil(s.remainingMs / 1000)}s`;
-      lines.push(`  ${s.name} — ${ready}`);
+      const key = SKILL_KEYS[s.id] ?? '?';
+      const ready = s.remainingMs <= 0 ? 'ready' : `cooldown ${Math.ceil(s.remainingMs / 1000)}s`;
+      lines.push(`  [${key}] ${s.name} — ${ready}`);
     }
+    lines.push('');
     const unlocked = prog.professions.filter((p) => p.unlocked);
     if (unlocked.length > 0) {
-      lines.push('');
-      lines.push('Professions:');
-      for (const p of unlocked) lines.push(`  ${p.name}`);
+      lines.push('Professions (automatic, passive):');
+      for (const p of unlocked) lines.push(`  ${p.name} — ${p.description}`);
+    } else {
+      lines.push('Professions: locked');
+      lines.push('  (auto-unlock at level 3 once a');
+      lines.push('   weapon/chassis upgrade is installed)');
     }
     lines.push('');
     lines.push('Materials:');
-    const entries = [...prog.inventory.entries()].filter(([, n]) => n > 0).sort();
-    if (entries.length === 0) lines.push('  (empty)');
+    const entries = [...prog.inventory.entries()]
+      .filter(([k, n]) => n > 0 && k !== 'repair cell')
+      .sort();
+    if (entries.length === 0) lines.push('  (none)');
     for (const [name, n] of entries) lines.push(`  ${name} ×${n}`);
     this.inventoryText.setText(lines.join('\n'));
+    // Re-clamp scroll to the (possibly changed) content height and reposition.
+    const maxScroll = Math.max(0, this.inventoryText.height - (this.inventoryViewH - this.INV_PAD_TOP - this.INV_PAD_BOTTOM));
+    this.inventoryScroll = Phaser.Math.Clamp(this.inventoryScroll, 0, maxScroll);
+    this.positionInventoryText();
   }
 
   private buildCraftBox(): void {
@@ -252,10 +346,11 @@ export class HudScene extends Phaser.Scene {
     // Log sits just above the controls box.
     this.logText.setY(h - controlsH - 10 - LOG_LINES * 16 - 12);
     // Inventory panel (left) and crafting panel (centered-ish).
-    this.inventoryBox.setPosition(10, 100);
     this.craftBox.setPosition(Math.max(260, this.scale.width / 2 - 160), 100);
     this.objectiveText.setX(this.scale.width / 2);
     this.objectivePlate.setX(this.scale.width / 2);
+    // Keep the inventory panel fitted to the available height (and clear of controls).
+    if (this.inventoryOpen) this.layoutInventory();
   }
 
   private refresh(): void {
