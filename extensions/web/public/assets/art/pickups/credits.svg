@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="pkc-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <circle cx="32" cy="32" r="18" fill="#2a2410" stroke="#ffb86c" stroke-width="2"/>
+  <circle cx="32" cy="32" r="13" fill="none" stroke="#ffb86c" stroke-width="1" opacity="0.6"/>
+  <path d="M28,24 l0,16 M26,27 q10,-4 10,3 q0,6 -8,4 q10,-1 10,5 q0,7 -12,3"
+        fill="none" stroke="#ffb86c" stroke-width="2" filter="url(#pkc-glow)"/>
+</svg>

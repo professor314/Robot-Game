@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="pkr-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="16" y="16" width="32" height="32" rx="6" fill="#152418" stroke="#50fa7b" stroke-width="2"/>
+  <rect x="29" y="22" width="6" height="20" rx="2" fill="#50fa7b" filter="url(#pkr-glow)"/>
+  <rect x="22" y="29" width="20" height="6" rx="2" fill="#50fa7b" filter="url(#pkr-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1.2s" repeatCount="indefinite"/></rect>
+</svg>

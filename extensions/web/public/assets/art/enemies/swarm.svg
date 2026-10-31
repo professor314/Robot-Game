@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true" role="img"><defs><filter id="en10-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="en10-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <ellipse cx="150" cy="170" rx="54" ry="40" fill="url(#en10-b)" stroke="#ff5555" stroke-width="2"/>
+  <!-- twitchy legs -->
+  <line x1="104" y1="170" x2="72" y2="150" stroke="#bd93f9" stroke-width="4" stroke-linecap="round"/>
+  <line x1="104" y1="180" x2="72" y2="200" stroke="#bd93f9" stroke-width="4" stroke-linecap="round"/>
+  <line x1="196" y1="170" x2="228" y2="150" stroke="#bd93f9" stroke-width="4" stroke-linecap="round"/>
+  <line x1="196" y1="180" x2="228" y2="200" stroke="#bd93f9" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="134" cy="162" r="8" fill="#ff5555" filter="url(#en10-glow)"/>
+  <circle cx="166" cy="162" r="8" fill="#ff5555" filter="url(#en10-glow)">
+    <animate attributeName="opacity" values="1;0.2;1" dur="0.4s" repeatCount="indefinite"/></circle>
+  <path d="M138,188 l12,10 l12,-10" fill="none" stroke="#ffb86c" stroke-width="2"/>
+</svg>

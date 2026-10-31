@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120" aria-hidden="true" role="img"><defs><filter id="pnl-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="4" y="4" width="192" height="112" rx="10" fill="#0d0d1a" fill-opacity="0.8" stroke="#bd93f9" stroke-width="2"/>
+  <rect x="4" y="4" width="192" height="112" rx="10" fill="none" stroke="#8be9fd" stroke-width="1" opacity="0.4"/>
+  <!-- corner accents -->
+  <path d="M4,20 L4,10 Q4,4 10,4 L20,4" fill="none" stroke="#ff92d0" stroke-width="2"/>
+  <path d="M180,4 L190,4 Q196,4 196,10 L196,20" fill="none" stroke="#ff92d0" stroke-width="2"/>
+  <path d="M4,100 L4,110 Q4,116 10,116 L20,116" fill="none" stroke="#ff92d0" stroke-width="2"/>
+  <path d="M180,116 L190,116 Q196,116 196,110 L196,100" fill="none" stroke="#ff92d0" stroke-width="2"/>
+</svg>

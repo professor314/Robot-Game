@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 160" width="256" height="160" aria-hidden="true" role="img"><defs><filter id="ship-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="ship-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <!-- hull -->
+  <path d="M40,80 L150,56 Q210,64 230,80 Q210,96 150,104 L40,80 Z"
+        fill="url(#ship-b)" stroke="#8be9fd" stroke-width="2"/>
+  <!-- cockpit -->
+  <path d="M170,72 Q196,74 206,80 Q196,86 170,88 Z" fill="#0d0d1a" stroke="#ff92d0" stroke-width="1.5"/>
+  <circle cx="190" cy="80" r="4" fill="#ff92d0" filter="url(#ship-glow)"/>
+  <!-- fins -->
+  <path d="M70,80 L52,54 L92,72 Z" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <path d="M70,80 L52,106 L92,88 Z" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <!-- window row -->
+  <circle cx="110" cy="80" r="3" fill="#50fa7b"/><circle cx="126" cy="80" r="3" fill="#50fa7b"/>
+  <circle cx="142" cy="80" r="3" fill="#50fa7b"/>
+  <!-- thruster flame trailing left -->
+  <path d="M40,74 L8,80 L40,86 Z" fill="#ffb86c" filter="url(#ship-glow)" opacity="0.85">
+    <animate attributeName="opacity" values="0.85;0.4;0.85" dur="0.4s" repeatCount="indefinite"/></path>
+  <path d="M30,77 L2,80 L30,83 Z" fill="#ff92d0" opacity="0.7"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true" role="img"><defs><filter id="en8-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="en8-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <rect x="60" y="64" width="180" height="8" rx="4" fill="#bd93f9" opacity="0.7"/>
+  <line x1="150" y1="72" x2="150" y2="104" stroke="#bd93f9" stroke-width="4"/>
+  <circle cx="150" cy="166" r="60" fill="url(#en8-b)" stroke="#50fa7b" stroke-width="3"/>
+  <rect x="104" y="150" width="92" height="24" rx="12" fill="#0d0d1a" stroke="#50fa7b" stroke-width="2"/>
+  <circle cx="128" cy="162" r="7" fill="#50fa7b" filter="url(#en8-glow)"/>
+  <circle cx="172" cy="162" r="7" fill="#50fa7b" filter="url(#en8-glow)"/>
+  <!-- heal cross emitter -->
+  <rect x="142" y="190" width="16" height="36" rx="3" fill="#50fa7b" filter="url(#en8-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1s" repeatCount="indefinite"/></rect>
+  <rect x="132" y="200" width="36" height="16" rx="3" fill="#50fa7b" filter="url(#en8-glow)"/>
+</svg>

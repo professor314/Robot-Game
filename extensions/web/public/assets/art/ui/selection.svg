@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="sel-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="4" y="4" width="56" height="56" rx="6" fill="none" stroke="#50fa7b" stroke-width="2"
+        stroke-dasharray="8 6" filter="url(#sel-glow)">
+    <animate attributeName="stroke-dashoffset" values="0;14" dur="0.6s" repeatCount="indefinite"/></rect>
+  <path d="M4,16 L4,8 Q4,4 8,4 L16,4" fill="none" stroke="#50fa7b" stroke-width="3"/>
+  <path d="M48,4 L56,4 Q60,4 60,8 L60,16" fill="none" stroke="#50fa7b" stroke-width="3"/>
+</svg>

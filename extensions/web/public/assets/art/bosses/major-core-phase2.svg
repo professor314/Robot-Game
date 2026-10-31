@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 480" width="420" height="480" aria-hidden="true" role="img"><defs><filter id="mb2-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="mb2-core" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff"/><stop offset="45%" stop-color="#ff5566"/><stop offset="100%" stop-color="#0d0d1a"/></radialGradient><linearGradient id="mb2-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <!-- outer frame ring -->
+  <circle cx="210" cy="240" r="150" fill="none" stroke="#bd93f9" stroke-width="6" opacity="0.5"/>
+  <circle cx="210" cy="240" r="150" fill="none" stroke="#ff5566" stroke-width="2" opacity="0.6"
+          stroke-dasharray="20 14">
+    <animateTransform attributeName="transform" type="rotate" from="0 210 240" to="360 210 240"
+      dur="5s" repeatCount="indefinite"/></circle>
+  <!-- armored shell octagon -->
+  <polygon points="150,110 270,110 330,180 330,300 270,370 150,370 90,300 90,180" fill="url(#mb2-b)" stroke="#ff5566" stroke-width="4" opacity="1.0"/>
+  <!-- hazard shoulder vents -->
+  <rect x="96" y="200" width="30" height="80" rx="6" fill="#0d0d1a" stroke="#ff5566" stroke-width="2"/>
+  <rect x="294" y="200" width="30" height="80" rx="6" fill="#0d0d1a" stroke="#ff5566" stroke-width="2"/>
+  <rect x="102" y="212" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <rect x="102" y="232" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <rect x="102" y="252" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <rect x="300" y="212" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <rect x="300" y="232" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <rect x="300" y="252" width="18" height="12" fill="#ff5566" opacity="0.6"/>
+  <!-- the core eye -->
+  <circle cx="210" cy="240" r="62" fill="#0d0d1a" stroke="#ff5566" stroke-width="4"/>
+  <circle cx="210" cy="240" r="48" fill="url(#mb2-core)" filter="url(#mb2-glow)">
+    <animate attributeName="opacity" values="1;0.5;1" dur="0.6s" repeatCount="indefinite"/></circle>
+  <circle cx="210" cy="240" r="16" fill="#fff" opacity="0.9"/>
+  <!-- brow / crown sensors -->
+  <rect x="150" y="122" width="120" height="16" rx="8" fill="#0d0d1a" stroke="#ff5566" stroke-width="2"/>
+  <circle cx="172" cy="130" r="5" fill="#ff5566" filter="url(#mb2-glow)"/>
+  <circle cx="210" cy="130" r="5" fill="#ff5566" filter="url(#mb2-glow)"/>
+  <circle cx="248" cy="130" r="5" fill="#ff5566" filter="url(#mb2-glow)"/>
+  
+  <path d="M150,150 L190,210 L160,250 L210,300" fill="none" stroke="#ff5566" stroke-width="3" opacity="0.8"/>
+  <path d="M280,160 L250,220 L290,260" fill="none" stroke="#ff5566" stroke-width="2.5" opacity="0.7"/>
+  <path d="M210,120 L230,160" fill="none" stroke="#ffb86c" stroke-width="2" opacity="0.7"/>
+</svg>

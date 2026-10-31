@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true" role="img"><defs><filter id="en7-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="en7-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <circle cx="150" cy="150" r="78" fill="url(#en7-b)" stroke="#ff5555" stroke-width="3"/>
+  <!-- split seams -->
+  <line x1="150" y1="72" x2="150" y2="228" stroke="#0d0d1a" stroke-width="3" opacity="0.5"/>
+  <line x1="72" y1="150" x2="228" y2="150" stroke="#0d0d1a" stroke-width="3" opacity="0.5"/>
+  <circle cx="150" cy="150" r="78" fill="none" stroke="#ffb86c" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.5"/>
+  <!-- cluster eyes (one per future split) -->
+  <circle cx="124" cy="128" r="10" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="124" cy="128" r="5" fill="#ff5555" filter="url(#en7-glow)"/>
+  <circle cx="176" cy="128" r="10" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="176" cy="128" r="5" fill="#ff5555" filter="url(#en7-glow)"/>
+  <circle cx="124" cy="176" r="10" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="124" cy="176" r="5" fill="#ff5555" filter="url(#en7-glow)"/>
+  <circle cx="176" cy="176" r="10" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="176" cy="176" r="5" fill="#ff5555" filter="url(#en7-glow)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.7s" repeatCount="indefinite"/></circle>
+</svg>

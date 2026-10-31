@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="cmp1-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <circle cx="32" cy="32" r="22" fill="#10151f" stroke="#ffb86c" stroke-width="1.5" opacity="0.4"/>
+  
+  <circle cx="32" cy="32" r="14" fill="#241b1a" stroke="#ffb86c" stroke-width="2"/>
+  <circle cx="32" cy="32" r="7" fill="#ffb86c" filter="url(#cmp1-glow)">
+    <animate attributeName="r" values="5;9;5" dur="1.3s" repeatCount="indefinite"/></circle>
+  <circle cx="32" cy="32" r="3" fill="#fff"/>
+</svg>

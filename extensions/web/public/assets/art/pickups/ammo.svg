@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="pka-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="24" y="14" width="16" height="36" rx="4" fill="#0d0d1a" stroke="#ff92d0" stroke-width="2"/>
+  <rect x="27" y="18" width="10" height="26" rx="2" fill="#ff92d0" filter="url(#pka-glow)" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.3;0.7" dur="1s" repeatCount="indefinite"/></rect>
+  <rect x="28" y="10" width="8" height="5" fill="#ff92d0"/>
+</svg>

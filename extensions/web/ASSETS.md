@@ -35,6 +35,32 @@ It carries no third-party license restriction.
   `scripts/make_art.py` (run with Python; edit it to tweak the art). Player bots are copied
   from the blog's `robots/` partials.
 
+### Future / expansion art (generated, not yet wired into the game)
+
+These were authored ahead of planned content so the art exists when the mechanics land. They
+live in their own subfolders and are produced by the same `scripts/make_art.py`
+(`make_future_assets` / `make_future_assets_2`). None are referenced by `textures.ts` yet; wire
+each in there when the feature that uses it ships.
+
+- **Bosses** (`art/bosses/`): 7 themed guardian bosses (`guardian-reactor`, `-nav`, `-life`,
+  `-comms`, `-thruster`, `-shield`, `-flight`) at 360×420, plus the station-core major boss in
+  two phases (`major-core-phase1`, `major-core-phase2`) at 420×480. Replaces the current
+  scaled-up/red-tinted enemy sprites once wired.
+- **Ship components** (`art/components/`): 7 unique component icons (one per mission) to replace
+  the single generic `items/component.svg` on the map and in pickups.
+- **New enemies** (`art/enemies/`): `brute`, `splitter`, `medic`, `turret`, `swarm` — five new
+  archetypes beyond the shipping five, for future brains.
+- **Ending** (`art/ending/`): `earth`, `starfield`, `ship`, `course-marker` for the
+  fly-home-to-Earth departure sequence.
+- **Second biome** (`art/tiles2/`): `floor-hull/ice/bio` + `wall-hull/ice/bio` — a distinct
+  exterior/frozen/organic tile set for expanding the map into new zones.
+- **Pickups** (`art/pickups/`): `credits`, `repair`, `shield`, `ammo`, `map-fragment`.
+- **Weapon tiers** (`art/weapons/`): `mk1/mk2/mk3`, `plasma-edge`, `capacitor-cannon` for
+  clearer HUD/inventory weapon icons.
+- **Status VFX** (`art/status/`): `telegraph`, `dash`, `overclock`, `shield-up`, `stun`.
+- **UI chrome** (`art/ui/`): `logo` (title lockup), `panel-frame`, map markers
+  (`marker-boss/key/unexplored`), `cursor`, `selection`.
+
 ### Placeholder art (generated fallback)
 If an SVG fails to load, the game falls back to tiny original shapes generated at runtime in
 `src/render/textures.ts` via Phaser `Graphics.generateTexture`, keeping the game playable with
