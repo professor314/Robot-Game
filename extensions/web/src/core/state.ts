@@ -283,6 +283,7 @@ export class WorldState {
   tick(dtMs: number): void {
     this.combat.tickCooldowns(this.allEntities(), dtMs);
     this.progression.tickSkills(dtMs);
+    this.tickBuffs(dtMs);
     this.tickRespawns(dtMs);
 
     // Resolve queued player commands.
@@ -395,6 +396,8 @@ export class WorldState {
   private installWeaponUpgrade(): void {
     const tier = this.progression.upgradeWeapon();
     this.player.stats.processing += WorldState.WEAPON_BONUS;
+    // Installing a weapon module counts as equipping a chassis for profession eligibility.
+    this.progression.chassisEquipped = true;
     this.events.emit({
       type: 'weaponUpgraded',
       name: `Weapon Mk.${tier + 1}`,
@@ -406,6 +409,7 @@ export class WorldState {
       message: `Weapon upgrade installed — Mk.${tier + 1} (ATK ${this.player.stats.processing})`,
       tone: 'good',
     });
+    this.tryUnlockProfessions();
   }
 
   /**
@@ -457,9 +461,11 @@ export class WorldState {
       case 'weapon':
         p.stats.processing += eff.processing;
         this.progression.upgradeWeapon();
+        this.progression.chassisEquipped = true;
         break;
       case 'armor':
         p.stats.shielding += eff.shielding;
+        this.progression.chassisEquipped = true;
         break;
       case 'miningLaser':
         this.progression.miningLevel += eff.speedup;
@@ -468,6 +474,7 @@ export class WorldState {
 
     this.events.emit({ type: 'crafted', recipeId, name: recipe.name });
     this.events.emit({ type: 'log', message: `Crafted ${recipe.name}`, tone: 'good' });
+    this.tryUnlockProfessions();
   }
 
   /**
@@ -551,12 +558,53 @@ export class WorldState {
     if (result.defeated) this.onHostileDefeated(target);
   }
 
+  /** Remaining duration (ms) and amount of a temporary Overclock processing buff, 0 = inactive. */
+  private overclockMs = 0;
+  private overclockBonus = 0;
+  private static readonly OVERCLOCK_BONUS = 6;
+  private static readonly OVERCLOCK_MS = 5000;
+  private static readonly REPAIR_AMOUNT = 30;
+
+  /** Activate a skill: Overclock (timed attack buff) or Nanite Repair (heal). */
   private useSkill(skillId: string): void {
-    if (!this.progression.useSkill(skillId)) return;
-    this.events.emit({ type: 'log', message: `Activated skill: ${skillId}` });
+    if (!this.progression.canUseSkill(skillId)) {
+      this.events.emit({ type: 'log', message: 'Skill on cooldown', tone: 'bad' });
+      return;
+    }
     if (skillId === 'repair') {
-      this.player.stats.integrity += 20;
+      const before = this.player.stats.integrity;
+      this.player.stats.integrity += WorldState.REPAIR_AMOUNT;
       clampIntegrity(this.player.stats);
+      const amount = this.player.stats.integrity - before;
+      this.progression.useSkill(skillId);
+      this.events.emit({ type: 'healed', amount, integrity: this.player.stats.integrity });
+      this.events.emit({ type: 'log', message: `Nanite Repair: +${amount} integrity`, tone: 'good' });
+      return;
+    }
+    if (skillId === 'overclock') {
+      // Stack-safe: apply the bonus once and (re)start the timer.
+      if (this.overclockMs <= 0) {
+        this.overclockBonus = WorldState.OVERCLOCK_BONUS;
+        this.player.stats.processing += this.overclockBonus;
+      }
+      this.overclockMs = WorldState.OVERCLOCK_MS;
+      this.progression.useSkill(skillId);
+      this.events.emit({ type: 'log', message: 'Overclock engaged — attack boosted', tone: 'good' });
+      return;
+    }
+    // Unknown skill id: just consume the cooldown.
+    this.progression.useSkill(skillId);
+  }
+
+  /** Decrement the Overclock buff timer and revert the bonus when it ends. */
+  private tickBuffs(dtMs: number): void {
+    if (this.overclockMs > 0) {
+      this.overclockMs -= dtMs;
+      if (this.overclockMs <= 0) {
+        this.player.stats.processing -= this.overclockBonus;
+        this.overclockBonus = 0;
+        this.events.emit({ type: 'log', message: 'Overclock expired' });
+      }
     }
   }
 
@@ -564,6 +612,7 @@ export class WorldState {
   private onHostileDefeated(hostile: Entity): void {
     const reward = hostile.reward;
     if (reward) {
+      const before = this.progression.level;
       const leveled = this.progression.addXp(reward.xp);
       this.progression.addCredits(reward.credits);
       this.progression.addSalvage(reward.salvage);
@@ -573,14 +622,50 @@ export class WorldState {
         credits: reward.credits,
         salvage: reward.salvage,
       });
-      if (leveled !== null) {
-        this.events.emit({ type: 'leveledUp', level: leveled });
-        this.progression.tryUnlockProfessions();
-      }
+      if (leveled !== null) this.onLevelUp(before, leveled);
     }
     this.dropLoot(hostile);
     const seed = HOSTILES.find((h) => `hostile:${h.key}` === hostile.id);
     hostile.respawnTimerMs = (seed?.respawnDelaySec ?? 60) * 1000;
+  }
+
+  /** Per-level stat gains, so leveling actually makes the player stronger. */
+  private static readonly LEVELUP_MAX_INTEGRITY = 10;
+  private static readonly LEVELUP_PROCESSING = 1;
+
+  /**
+   * Apply level-up rewards for each level gained: raise max integrity and attack, fully repair,
+   * announce it, and unlock professions once the level threshold is met. Professions grant a
+   * one-time passive bonus so the unlock matters.
+   */
+  private onLevelUp(fromLevel: number, toLevel: number): void {
+    const gained = toLevel - fromLevel;
+    const p = this.player;
+    p.stats.maxIntegrity += WorldState.LEVELUP_MAX_INTEGRITY * gained;
+    p.stats.processing += WorldState.LEVELUP_PROCESSING * gained;
+    p.stats.integrity = p.stats.maxIntegrity; // a fresh charge on level-up
+    this.events.emit({ type: 'leveledUp', level: toLevel });
+    this.events.emit({
+      type: 'log',
+      message: `LEVEL ${toLevel} — systems reinforced (+${WorldState.LEVELUP_MAX_INTEGRITY * gained} max integrity)`,
+      tone: 'good',
+    });
+    this.tryUnlockProfessions();
+  }
+
+  /** Unlock professions when eligible and apply each one's one-time passive bonus. */
+  private tryUnlockProfessions(): void {
+    const newly = this.progression.tryUnlockProfessions();
+    for (const id of newly) {
+      if (id === 'warframe') this.player.stats.processing += 3;
+      if (id === 'scavenger') this.player.stats.shielding += 1;
+      const prof = this.progression.professions.find((x) => x.id === id);
+      this.events.emit({
+        type: 'log',
+        message: `Profession unlocked: ${prof?.name ?? id}`,
+        tone: 'good',
+      });
+    }
   }
 
   /** Counter so dropped-loot ids are unique across a run. */

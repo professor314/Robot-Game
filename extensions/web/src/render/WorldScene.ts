@@ -380,6 +380,16 @@ export class WorldScene extends Phaser.Scene {
         this.state.apply(Commands.interact());
         return;
       }
+      if (ev.code === 'KeyQ') {
+        ev.preventDefault();
+        this.state.apply(Commands.useSkill('overclock'));
+        return;
+      }
+      if (ev.code === 'KeyZ') {
+        ev.preventDefault();
+        this.state.apply(Commands.useSkill('repair'));
+        return;
+      }
       const dir = KEY_DIR[ev.code];
       if (!dir) return;
       ev.preventDefault();

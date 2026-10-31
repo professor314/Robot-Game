@@ -28,6 +28,8 @@ equips automatically (you need it to mine).
 | **W A S D** or **Arrow keys** | Move one tile. Walk through a doorway to travel to the next room. |
 | **Space** or **F** | Attack an adjacent enemy (the tile directly up/down/left/right of you). |
 | **E** | Interact: mine a junk deposit, or use a repair bay — when you're next to one. |
+| **Q** | Overclock — a temporary attack boost (has a cooldown). |
+| **Z** | Nanite Repair — restores integrity (has a cooldown). |
 | **I** | Open/close your inventory. |
 | **C** | Open/close the crafting panel (then press a number to craft). |
 | *(walk over an item)* | Pick-up is automatic; stepping onto or beside salvage grabs it. |
@@ -114,10 +116,14 @@ coolant cells, and more). More recipes will be added over time.
 
 ## Progression
 
-- **Leveling:** XP from defeating enemies raises your level.
-- **Credits & salvage:** spendable/collectible resources (a shop is planned).
-- **Ore:** mined from deposits (crafting/refining is planned).
-- **Skills & professions** exist in the systems layer; more player-facing hooks are coming.
+- **Leveling:** XP from defeating enemies raises your level. Each level permanently raises your
+  max integrity and attack, and fully repairs you.
+- **Skills:** **Overclock** (Q) temporarily boosts your attack; **Nanite Repair** (Z) heals you.
+  Both have cooldowns, shown in the inventory panel.
+- **Professions:** unlock at level 3 once you've installed or crafted a weapon/chassis upgrade,
+  granting a permanent bonus (War Frame = +attack, Scavenger = +shielding).
+- **Credits & materials:** spendable/collectible resources. Materials feed crafting; a shop for
+  credits is planned.
 
 ## Saving, dying, and starting over
 

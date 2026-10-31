@@ -16,11 +16,12 @@ const CONTROLS: [string, string][] = [
   ['Attack', 'Space / F'],
   ['Mine / use', 'E'],
   ['Pick up', 'automatic'],
+  ['Overclock', 'Q'],
+  ['Nanite Repair', 'Z'],
   ['Inventory', 'I'],
   ['Craft', 'C'],
   ['Save / Load', 'O / P'],
   ['Mute', 'M'],
-  ['Game feel', 'G'],
 ];
 
 /**
@@ -128,7 +129,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private buildInventoryBox(): void {
-    this.inventoryBox = this.panel(240, 280, 'INVENTORY  (I to close)');
+    this.inventoryBox = this.panel(260, 360, 'INVENTORY  (I to close)');
     this.inventoryText = this.add.text(10, 26, '', {
       fontFamily: 'monospace',
       fontSize: '12px',
@@ -145,13 +146,25 @@ export class HudScene extends Phaser.Scene {
     if (this.inventoryOpen) this.refreshInventory();
   }
 
-  /** Render the inventory contents (resources + weapon tier + laser). */
+  /** Render the inventory contents: gear, skills, professions, and salvaged materials. */
   private refreshInventory(): void {
     const prog = this.world.state.progression;
     const lines: string[] = [];
     lines.push(`Weapon: Mk.${prog.weaponLevel + 1}`);
-    lines.push(`Mining laser: ${this.world.state.miningLaserEquipped ? 'equipped' : 'none'}`);
-    lines.push(`Credits: ${prog.credits}`);
+    lines.push(`Mining laser: ${this.world.state.miningLaserEquipped ? `Mk.${prog.miningLevel + 1}` : 'none'}`);
+    lines.push(`Shielding: ${this.world.state.player.stats.shielding}   Credits: ${prog.credits}`);
+    lines.push('');
+    lines.push('Skills:');
+    for (const s of prog.skills) {
+      const ready = s.remainingMs <= 0 ? 'ready' : `${Math.ceil(s.remainingMs / 1000)}s`;
+      lines.push(`  ${s.name} — ${ready}`);
+    }
+    const unlocked = prog.professions.filter((p) => p.unlocked);
+    if (unlocked.length > 0) {
+      lines.push('');
+      lines.push('Professions:');
+      for (const p of unlocked) lines.push(`  ${p.name}`);
+    }
     lines.push('');
     lines.push('Materials:');
     const entries = [...prog.inventory.entries()].filter(([, n]) => n > 0).sort();
