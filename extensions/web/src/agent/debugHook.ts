@@ -34,6 +34,10 @@ export function installDebugAgentHook(
         return Commands.move(action.dir);
       case 'attack':
         return Commands.attack();
+      case 'dash':
+        return Commands.dash();
+      case 'rangedAttack':
+        return Commands.rangedAttack();
       case 'useSkill':
         return Commands.useSkill(action.skillId);
       case 'pickup':
@@ -99,6 +103,12 @@ export function installDebugAgentHook(
             defeated: h.defeated,
           })),
           visitedRooms: [],
+          story: {
+            phase: state.story.phase,
+            installed: state.story.installed.size,
+            total: state.missions.total,
+          },
+          installPointHere: false,
           legalActions: observe(state),
         };
         hook.act(agent.decide(obs));

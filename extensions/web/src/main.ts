@@ -3,8 +3,13 @@ import Phaser from 'phaser';
 import { installDebugAgentHook } from './agent/debugHook';
 import { BootScene } from './render/BootScene';
 import { GameOverScene } from './render/GameOverScene';
+import { GameWonScene } from './render/GameWonScene';
 import { HudScene } from './render/HudScene';
+import { IntroScene } from './render/IntroScene';
+import { LogScene } from './render/LogScene';
+import { MapScene } from './render/MapScene';
 import { SelectBotScene } from './render/SelectBotScene';
+import { VendorScene } from './render/VendorScene';
 import { WORLD_SCENE, WorldScene } from './render/WorldScene';
 
 /**
@@ -26,7 +31,18 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, SelectBotScene, WorldScene, HudScene, GameOverScene],
+  scene: [
+    BootScene,
+    SelectBotScene,
+    WorldScene,
+    HudScene,
+    IntroScene,
+    MapScene,
+    VendorScene,
+    LogScene,
+    GameOverScene,
+    GameWonScene,
+  ],
 };
 
 const game = new Phaser.Game(config);

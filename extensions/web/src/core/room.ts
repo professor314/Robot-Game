@@ -50,6 +50,11 @@ export class Room {
   /** Tile keys ("x,y") blocked by a solid prop; movement routes around them. */
   readonly blocked = new Set<string>();
 
+  /** v3: id of a log entry found here (set at world build), or undefined. */
+  logId?: string;
+  /** v3: whether this room's install point has received its ship component. */
+  componentInstalled = false;
+
   constructor(key: string, zone: string, blurb: string, pvpZone: boolean) {
     this.key = key;
     this.zone = zone;

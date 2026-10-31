@@ -5,6 +5,8 @@ import { ROOM_HEIGHT, ROOM_WIDTH, Room } from '../core/room';
 import { WorldState } from '../core/state';
 import { TileKind } from '../core/tiles';
 import { Direction } from '../data/world';
+import { MISSIONS } from '../data/missions';
+import { ALL_BOSSES } from '../data/bosses';
 import { AudioManager } from '../audio/AudioManager';
 import { Persistence } from './persistence';
 import { gameFeel, toggleGameFeel } from './settings';
@@ -67,7 +69,8 @@ export class WorldScene extends Phaser.Scene {
   private readonly itemSprites = new Map<string, Phaser.GameObjects.Image>();
   /** Prop sprite keyed by "roomKey:x,y" so interactive props (ore) can be removed on mine. */
   private readonly propSprites = new Map<string, Phaser.GameObjects.Image>();
-  /** Room container per room key, so runtime-dropped loot can be added to the right layer. */
+  /** Install-point marker per room, hidden once its component is installed. */
+  private readonly installMarkers = new Map<string, Phaser.GameObjects.Image>();
   private offsetX = 0;
   private offsetY = 0;
   /** Whether SVG art is available (vs. placeholder textures). */
@@ -79,6 +82,8 @@ export class WorldScene extends Phaser.Scene {
   /** Chosen bot id and whether to resume a save, passed in from the select screen. */
   private botId = 'dome';
   private resume = false;
+  /** Timestamp of the last accepted movement, for chassis-speed input throttling. */
+  private lastMoveAt = 0;
 
   constructor() {
     super(WORLD_SCENE);
@@ -127,6 +132,11 @@ export class WorldScene extends Phaser.Scene {
 
     // Launch the HUD as an overlay scene, handing it this scene so it can read Core state.
     this.scene.launch('Hud', { world: this });
+
+    // Show the wake-up intro on a fresh game (not when resuming, and not if already seen).
+    if (this.state.story.phase === 'intro' && !this.state.story.introSeen) {
+      this.scene.launch('Intro', { world: this });
+    }
   }
 
   /**
@@ -157,8 +167,12 @@ export class WorldScene extends Phaser.Scene {
     if (this.gameOver) return;
     this.state.tick(delta);
     this.syncHostiles();
-    // Swap to combat music when a live hostile shares the player's room.
-    this.audio.setContext(this.state.hostilesInCurrentRoom().length > 0 ? 'combat' : 'exploration');
+    // Music context: boss theme if a live boss shares the room (major boss → its own theme),
+    // else combat if any hostile is here, else exploration.
+    const here = this.state.hostilesInCurrentRoom();
+    const boss = here.find((h) => h.bossId);
+    if (boss) this.audio.setContext(boss.major ? 'majorBoss' : 'boss');
+    else this.audio.setContext(here.length > 0 ? 'combat' : 'exploration');
   }
 
   /** Freeze the world and show the GAME OVER overlay with a restart option. */
@@ -242,11 +256,18 @@ export class WorldScene extends Phaser.Scene {
 
   /** Texture key for an item kind. */
   private itemTexture(kind: string): string {
-    if (kind === 'miningLaser' || kind === 'weaponUpgrade' || kind === 'loot' || kind === 'recipe') {
+    if (
+      kind === 'miningLaser' ||
+      kind === 'weaponUpgrade' ||
+      kind === 'loot' ||
+      kind === 'recipe' ||
+      kind === 'keycard' ||
+      kind === 'component'
+    ) {
       return texItem(kind);
     }
     // Salvage resource items reuse the matching junk art.
-    return texJunk(kind === 'component' ? 'circuit' : kind === 'scrap' ? 'scrap' : kind === 'cell' ? 'cell' : 'crystal');
+    return texJunk(kind === 'scrap' ? 'scrap' : kind === 'cell' ? 'cell' : 'crystal');
   }
 
   /** Build a container of tile images, props, and items for every room; fog hides it until visited. */
@@ -293,20 +314,42 @@ export class WorldScene extends Phaser.Scene {
         this.itemSprites.set(item.id, img);
       }
 
+      // Install-point marker (if this room is a mission install point, near the room centre).
+      if (MISSIONS.some((m) => m.installRoomKey === room.key)) {
+        const cx = Math.floor(ROOM_WIDTH / 2);
+        const cy = Math.floor(ROOM_HEIGHT / 2) - 1;
+        const marker = this.place(
+          cx * TILE + TILE / 2,
+          cy * TILE + TILE / 2,
+          texItem('installPoint'),
+          TextureKey.Door,
+          TILE,
+        );
+        marker.setDepth(1).setVisible(!room.componentInstalled);
+        container.add(marker);
+        this.installMarkers.set(room.key, marker);
+      }
+
       container.setVisible(room.visited);
       this.roomLayers.set(room.key, container);
     }
   }
 
-  /** Enemy art for an entity: patrols use one type; named hostiles map to distinct types. */
-  private enemyArt(entityId: string): EnemyArt {
-    if (entityId.startsWith('patrol:')) return 'crawler';
-    const idx = this.state.hostiles
-      .filter((h) => !h.id.startsWith('patrol:'))
-      .findIndex((h) => h.id === entityId);
-    // Named hostiles cycle through sentry/drone/program/hunter (skip crawler = patrol art).
-    const named: EnemyArt[] = ['sentry', 'drone', 'program', 'hunter'];
-    return named[Math.max(0, idx) % named.length];
+  /** Enemy art for a hostile: bosses use their data art; patrols/named map to a type. */
+  private enemyArt(h: { id: string; bossId?: string; brain?: string | null }): EnemyArt {
+    if (h.bossId) {
+      const seed = ALL_BOSSES.find((b) => b.id === h.bossId);
+      if (seed) return seed.art;
+    }
+    // Map the brain type to a matching sprite.
+    const byBrain: Record<string, EnemyArt> = {
+      sentry: 'sentry',
+      drone: 'drone',
+      crawler: 'crawler',
+      hunter: 'hunter',
+      hostile: 'crawler',
+    };
+    return byBrain[h.brain ?? 'hostile'] ?? 'crawler';
   }
 
   private drawHostiles(): void {
@@ -314,15 +357,18 @@ export class WorldScene extends Phaser.Scene {
       const room = this.state.graph.rooms.get(h.roomKey);
       if (!room) continue;
       const { ox, oy } = this.roomOrigin(room);
+      // Bosses are rendered larger; the major boss larger still.
+      const scale = h.bossId ? (h.major ? TILE * 2.2 : TILE * 1.7) : TILE * 1.15;
       const sprite = this.place(
         ox + h.x * TILE + TILE / 2,
         oy + h.y * TILE + TILE / 2,
-        texEnemy(this.enemyArt(h.id)),
+        texEnemy(this.enemyArt(h)),
         TextureKey.Hostile,
-        TILE * 1.15,
+        scale,
       )
-        .setVisible(room.visited)
-        .setDepth(8);
+        .setVisible(room.visited && !h.defeated)
+        .setDepth(h.bossId ? 9 : 8);
+      if (h.bossId) sprite.setTint(0xffb3b3); // bosses read redder/meaner
       this.hostileSprites.set(h.id, sprite);
     }
   }
@@ -390,9 +436,42 @@ export class WorldScene extends Phaser.Scene {
         this.state.apply(Commands.useSkill('repair'));
         return;
       }
+      if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') {
+        ev.preventDefault();
+        this.state.apply(Commands.dash());
+        return;
+      }
+      if (ev.code === 'KeyR') {
+        ev.preventDefault();
+        this.state.apply(Commands.rangedAttack());
+        return;
+      }
+      if (ev.code === 'KeyT') {
+        ev.preventDefault();
+        if (!this.scene.isActive('Map')) this.scene.launch('Map', { world: this });
+        return;
+      }
+      if (ev.code === 'KeyL') {
+        ev.preventDefault();
+        if (!this.scene.isActive('Logs')) this.scene.launch('Logs', { world: this });
+        return;
+      }
+      if (ev.code === 'KeyV') {
+        ev.preventDefault();
+        if (this.state.player.roomKey === this.state.vendorRoom && !this.scene.isActive('Vendor')) {
+          this.scene.launch('Vendor', { world: this });
+        } else if (this.state.player.roomKey !== this.state.vendorRoom) {
+          this.state.events.emit({ type: 'log', message: 'No vendor here', tone: 'bad' });
+        }
+        return;
+      }
       const dir = KEY_DIR[ev.code];
       if (!dir) return;
       ev.preventDefault();
+      // Throttle held/repeated movement to the chassis's cadence (its "speed").
+      const now = this.time.now;
+      if (now - this.lastMoveAt < this.state.moveIntervalMs) return;
+      this.lastMoveAt = now;
       this.state.apply(Commands.move(dir));
     });
   }
@@ -477,9 +556,101 @@ export class WorldScene extends Phaser.Scene {
         this.audio.sfx('defeat');
         if (e.entityId === this.state.player.id) this.showGameOver();
         break;
+      // --- v3 ---
+      case 'componentInstalled':
+        this.installMarkers.get(this.state.currentRoom.key)?.setVisible(false);
+        this.audio.sfx('levelup');
+        this.floatText(this.player, 'INSTALLED', '#5affa0', 20);
+        break;
+      case 'keyFound':
+        this.audio.sfx('pickup');
+        this.floatText(this.player, 'KEY', '#ffb86c', 20);
+        break;
+      case 'componentRecovered':
+        this.audio.sfx('levelup');
+        break;
+      case 'dashed':
+        this.syncPlayerSprite();
+        this.audio.sfx('move');
+        this.flashSprite(this.player, 0x8be9fd);
+        break;
+      case 'rangedFired':
+        this.audio.sfx('hit');
+        this.drawProjectile(e.fromX, e.fromY, e.toX, e.toY);
+        break;
+      case 'knockback':
+        this.syncPlayerSprite();
+        this.cameras.main.shake(100, 0.008);
+        break;
+      case 'telegraph': {
+        const s = this.hostileSprites.get(e.entityId);
+        if (s) this.telegraphFlash(s, e.windupMs);
+        this.audio.sfx('damage');
+        break;
+      }
+      case 'bossEngaged':
+        this.audio.setContext(e.major ? 'majorBoss' : 'boss');
+        break;
+      case 'bossDefeated':
+        this.hostileSprites.get(`boss:${e.bossId}`)?.setVisible(false);
+        this.audio.sfx('defeat');
+        break;
+      case 'purchased':
+        this.audio.sfx('pickup');
+        break;
+      case 'gameWon':
+        this.showGameWon();
+        break;
       default:
         break;
     }
+  }
+
+  /** Brief tint flash on a sprite (dash cue, etc.). */
+  private flashSprite(sprite: Phaser.GameObjects.Image, color: number): void {
+    sprite.setTint(color);
+    this.time.delayedCall(140, () => sprite.clearTint());
+  }
+
+  /** Pulse a boss sprite red during its heavy-attack wind-up so the player can dodge. */
+  private telegraphFlash(sprite: Phaser.GameObjects.Image, windupMs: number): void {
+    this.tweens.add({
+      targets: sprite,
+      alpha: 0.4,
+      yoyo: true,
+      repeat: Math.max(1, Math.floor(windupMs / 150)),
+      duration: 150,
+      onComplete: () => sprite.setAlpha(1),
+    });
+    sprite.setTint(0xff3b3b);
+    this.time.delayedCall(windupMs, () => sprite.setTint(0xffb3b3));
+  }
+
+  /** Draw a short-lived projectile streak from one tile to another in the current room. */
+  private drawProjectile(fx: number, fy: number, tx: number, ty: number): void {
+    const { ox, oy } = this.roomOrigin(this.state.currentRoom);
+    const a = { x: ox + fx * TILE + TILE / 2, y: oy + fy * TILE + TILE / 2 };
+    const b = { x: ox + tx * TILE + TILE / 2, y: oy + ty * TILE + TILE / 2 };
+    const shot = this.place(a.x, a.y, texItem('projectile'), TextureKey.Door, TILE * 0.6).setDepth(12);
+    this.tweens.add({
+      targets: shot,
+      x: b.x,
+      y: b.y,
+      duration: 120,
+      onComplete: () => shot.destroy(),
+    });
+  }
+
+  /** Show the victory ending scene. */
+  private showGameWon(): void {
+    this.gameOver = true; // freeze world input/update
+    this.audio.setContext('exploration');
+    this.scene.launch('GameWon', {
+      onContinue: () => {
+        this.gameOver = false;
+        this.state.story.enterFreeRoam();
+      },
+    });
   }
 
   /** Remove a mined ore prop's sprite from the scene. */

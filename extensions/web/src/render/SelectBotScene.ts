@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { chassisById } from '../data/chassis';
 import { Persistence } from './persistence';
 import { PLAYER_BOTS, texPlayer } from './textures';
 
@@ -44,22 +45,33 @@ export class SelectBotScene extends Phaser.Scene {
     PLAYER_BOTS.forEach((bot, idx) => {
       const x = startX + idx * spacing;
       const card = this.add
-        .rectangle(x, y, spacing - 24, 220, 0x16161f)
+        .rectangle(x, y, spacing - 20, 260, 0x16161f)
         .setStrokeStyle(2, 0x44475a)
         .setInteractive({ useHandCursor: true });
 
-      const sprite = this.add.image(x, y - 20, texPlayer(bot.id));
+      const sprite = this.add.image(x, y - 40, texPlayer(bot.id));
       // Scale the tall robot art to fit the card.
-      const maxH = 150;
+      const maxH = 130;
       if (sprite.height > 0) sprite.setScale(Math.min(1, maxH / sprite.height));
 
+      const profile = chassisById(bot.id);
       const label = this.add
-        .text(x, y + 88, bot.label, {
+        .text(x, y + 62, profile.label, {
           fontFamily: 'monospace',
           fontSize: '14px',
           color: '#c8d0e0',
         })
         .setOrigin(0.5);
+      // Tradeoff + key stats so the choice is informed.
+      this.add
+        .text(x, y + 84, `${profile.tagline}\nHP ${profile.maxIntegrity} · ATK ${profile.processing} · DEF ${profile.shielding}`, {
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: '#8892a6',
+          align: 'center',
+          wordWrap: { width: spacing - 32 },
+        })
+        .setOrigin(0.5, 0);
 
       const pick = (): void => this.choose(bot.id);
       for (const obj of [card, sprite.setInteractive({ useHandCursor: true }), label.setInteractive({ useHandCursor: true })]) {

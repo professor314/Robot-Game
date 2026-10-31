@@ -95,13 +95,23 @@ describe('crafting', () => {
 
   it('crafts a weapon: raises processing and weapon tier', () => {
     const world = new WorldState({ seed: 9 });
-    stock(world, 'capacitor-cannon');
+    stock(world, 'plasma-edge');
     const before = world.player.stats.processing;
     const tierBefore = world.progression.weaponLevel;
-    world.apply(Commands.craft('capacitor-cannon'));
+    world.apply(Commands.craft('plasma-edge'));
     world.tick(16);
     expect(world.player.stats.processing).toBe(before + 6);
     expect(world.progression.weaponLevel).toBe(tierBefore + 1);
+  });
+
+  it('crafts the Capacitor Cannon: unlocks ranged and raises attack', () => {
+    const world = new WorldState({ seed: 9 });
+    stock(world, 'capacitor-cannon');
+    const before = world.player.stats.processing;
+    world.apply(Commands.craft('capacitor-cannon'));
+    world.tick(16);
+    expect(world.rangedUnlocked).toBe(true);
+    expect(world.player.stats.processing).toBe(before + 4);
   });
 
   it('crafts a focused mining laser: raises mining level', () => {

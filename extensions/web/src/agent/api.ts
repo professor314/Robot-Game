@@ -4,11 +4,14 @@ import { ROOM_HEIGHT, ROOM_WIDTH } from '../core/room';
 import { WorldOptions, WorldState } from '../core/state';
 import { TileKind } from '../core/tiles';
 import { Direction } from '../data/world';
+import { MISSIONS } from '../data/missions';
 
 /** A discrete agent action, mirroring the serializable Core commands. */
 export type Action =
   | { type: 'move'; dir: Direction }
   | { type: 'attack' }
+  | { type: 'dash' }
+  | { type: 'rangedAttack' }
   | { type: 'useSkill'; skillId: string }
   | { type: 'pickup' }
   | { type: 'interact' }
@@ -45,6 +48,10 @@ export interface Observation {
   nearbyEntities: EntityObservation[];
   /** Keys of rooms the player has visited. */
   visitedRooms: string[];
+  /** Story/mission progress: arc phase and how many components are installed of the total. */
+  story: { phase: string; installed: number; total: number };
+  /** Whether this room is a mission install point awaiting its component. */
+  installPointHere: boolean;
   /** Actions that are legal from this observation. */
   legalActions: Action[];
 }
@@ -67,6 +74,10 @@ function toCommand(action: Action): Command {
       return Commands.move(action.dir);
     case 'attack':
       return Commands.attack();
+    case 'dash':
+      return Commands.dash();
+    case 'rangedAttack':
+      return Commands.rangedAttack();
     case 'useSkill':
       return Commands.useSkill(action.skillId);
     case 'pickup':
@@ -115,9 +126,11 @@ export class AgentApi {
     const actions: Action[] = [
       { type: 'wait' },
       { type: 'attack' },
+      { type: 'dash' },
       { type: 'pickup' },
       { type: 'interact' },
     ];
+    if (this.world.rangedUnlocked) actions.push({ type: 'rangedAttack' });
     const room = this.world.currentRoom;
     const p = this.world.player;
     const deltas: Record<Direction, { dx: number; dy: number }> = {
@@ -171,6 +184,13 @@ export class AgentApi {
         defeated: h.defeated,
       })),
       visitedRooms: [...this.world.graph.rooms.values()].filter((r) => r.visited).map((r) => r.key),
+      story: {
+        phase: this.world.story.phase,
+        installed: this.world.story.installed.size,
+        total: this.world.missions.total,
+      },
+      installPointHere:
+        MISSIONS.some((m) => m.installRoomKey === room.key) && !room.componentInstalled,
       legalActions: this.legalActions(),
     };
   }

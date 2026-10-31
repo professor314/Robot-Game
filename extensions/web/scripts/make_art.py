@@ -365,6 +365,48 @@ def loot():
 </svg>'''
 
 
+def keycard():
+    i = "kc"
+    return svg_open(64, 64, f'<defs>{GLOW.format(i=i)}</defs>') + f'''
+  <rect x="14" y="20" width="36" height="24" rx="3" fill="#241b40" stroke="{ORANGE}" stroke-width="2"/>
+  <rect x="18" y="24" width="14" height="10" rx="1" fill="{ORANGE}" opacity="0.7"/>
+  <circle cx="42" cy="29" r="3" fill="{GREEN}" filter="url(#{i}-glow)"/>
+  <line x1="18" y1="38" x2="46" y2="38" stroke="{BLUE}" stroke-width="1.5" opacity="0.6"/>
+  <rect x="44" y="22" width="4" height="20" rx="1" fill="{PINK}" opacity="0.8"/>
+</svg>'''
+
+
+def ship_component():
+    i = "sc"
+    return svg_open(64, 64, f'<defs>{GLOW.format(i=i)}</defs>') + f'''
+  <circle cx="32" cy="32" r="18" fill="#1b2740" stroke="{GREEN}" stroke-width="2"/>
+  <circle cx="32" cy="32" r="9" fill="{GREEN}" filter="url(#{i}-glow)" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.3;0.7" dur="1.4s" repeatCount="indefinite"/></circle>
+  <rect x="30" y="8" width="4" height="8" fill="{BLUE}"/>
+  <rect x="30" y="48" width="4" height="8" fill="{BLUE}"/>
+  <rect x="8" y="30" width="8" height="4" fill="{BLUE}"/>
+  <rect x="48" y="30" width="8" height="4" fill="{BLUE}"/>
+</svg>'''
+
+
+def install_point():
+    i = "ip"
+    return svg_open(64, 64, f'<defs>{GLOW.format(i=i)}</defs>') + f'''
+  <rect x="12" y="12" width="40" height="40" rx="4" fill="#16161f" stroke="{PINK}" stroke-width="2" stroke-dasharray="4 3"/>
+  <circle cx="32" cy="32" r="10" fill="none" stroke="{PINK}" stroke-width="2" opacity="0.7">
+    <animate attributeName="r" values="8;12;8" dur="1.6s" repeatCount="indefinite"/></circle>
+  <path d="M32,24 L32,40 M24,32 L40,32" stroke="{PINK}" stroke-width="2" opacity="0.8"/>
+</svg>'''
+
+
+def projectile():
+    i = "pj"
+    return svg_open(32, 32, f'<defs>{GLOW.format(i=i)}</defs>') + f'''
+  <ellipse cx="16" cy="16" rx="12" ry="4" fill="{PINK}" filter="url(#{i}-glow)"/>
+  <circle cx="16" cy="16" r="4" fill="#fff" opacity="0.9"/>
+</svg>'''
+
+
 def recipe_chip():
     i = "rcp"
     return svg_open(64, 64, f'<defs>{GLOW.format(i=i)}</defs>') + f'''
@@ -524,6 +566,10 @@ def main():
     write("items/loot.svg", loot())
     write("items/heal-station.svg", heal_station())
     write("items/recipe.svg", recipe_chip())
+    write("items/keycard.svg", keycard())
+    write("items/component.svg", ship_component())
+    write("items/install-point.svg", install_point())
+    write("items/projectile.svg", projectile())
 
     write("props/control-station.svg", prop_control_station())
     write("props/telescope.svg", prop_telescope())

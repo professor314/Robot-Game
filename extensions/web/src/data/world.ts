@@ -134,3 +134,36 @@ export const HOSTILES: HostileSeed[] = [
 
 /** The room the player starts in. */
 export const START_ROOM = 'Main Corridor';
+
+// ---------------------------------------------------------------------------
+// v3 station metadata: key-card locks, install points, vendor, key placements.
+// Keys are keyed to a ROOM (all doors into that room share the key). Placements
+// are chosen so no key gates the room that contains it — the chain is solvable
+// from the start room (verified at build in core/keys.ts).
+// ---------------------------------------------------------------------------
+
+/** A key-card definition. */
+export interface KeyCardSeed {
+  id: string;
+  name: string;
+  /** The room the card unlocks (every door into it). */
+  roomKey: string;
+  /** The (open-reachable) room where the card is found. */
+  foundInRoomKey: string;
+}
+
+/** Key cards and the rooms they gate. */
+export const KEY_CARDS: KeyCardSeed[] = [
+  { id: 'dock-key', name: 'Docking Clearance', roomKey: 'Docking Port', foundInRoomKey: 'Reactor Terminal' },
+  { id: 'data-key', name: 'Data Core Pass', roomKey: 'Data Core', foundInRoomKey: 'Maintenance Shaft' },
+  { id: 'drift-key', name: 'Drift Beacon', roomKey: 'Debris Drift', foundInRoomKey: 'Cargo Wreck' },
+];
+
+/** Map of roomKey → required key id for quick lookup. */
+export const ROOM_LOCKS: Record<string, string> = Object.fromEntries(
+  KEY_CARDS.map((k) => [k.roomKey, k.id]),
+);
+
+/** The single Vendor room. */
+export const VENDOR_ROOM = 'Storage Hub';
+

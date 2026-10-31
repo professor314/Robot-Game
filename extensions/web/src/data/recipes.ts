@@ -14,7 +14,8 @@ export type RecipeEffect =
   | { kind: 'maxIntegrity'; amount: number } // permanently raise max integrity (+ heal)
   | { kind: 'weapon'; processing: number } // raise attack output / weapon tier
   | { kind: 'armor'; shielding: number } // raise damage reduction
-  | { kind: 'miningLaser'; speedup: number }; // improve the mining laser (fewer hits)
+  | { kind: 'miningLaser'; speedup: number } // improve the mining laser (fewer hits)
+  | { kind: 'rangedWeapon'; processing: number }; // unlock the ranged attack (+attack)
 
 /** A craftable recipe. */
 export interface Recipe {
@@ -62,11 +63,23 @@ export const RECIPES: Recipe[] = [
   {
     id: 'capacitor-cannon',
     name: 'Capacitor Cannon',
-    description: 'A heavier weapon module. +6 attack output.',
+    description: 'A ranged weapon module. Unlocks the ranged attack and +4 attack output.',
     cost: [
       ['capacitor', 2],
       ['circuit board', 2],
       ['servo', 1],
+    ],
+    effect: { kind: 'rangedWeapon', processing: 4 },
+    repeatable: false,
+  },
+  {
+    id: 'plasma-edge',
+    name: 'Plasma Edge',
+    description: 'A heavier melee module. +6 attack output.',
+    cost: [
+      ['capacitor', 1],
+      ['alloy plate', 2],
+      ['microchip', 1],
     ],
     effect: { kind: 'weapon', processing: 6 },
     repeatable: true,

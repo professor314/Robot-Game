@@ -65,6 +65,10 @@ const ITEM_FILES: Record<string, string> = {
   loot: 'items/loot.svg',
   healStation: 'items/heal-station.svg',
   recipe: 'items/recipe.svg',
+  keycard: 'items/keycard.svg',
+  component: 'items/component.svg',
+  installPoint: 'items/install-point.svg',
+  projectile: 'items/projectile.svg',
 };
 
 /** Room-themed furniture prop art, keyed by PropKind. */

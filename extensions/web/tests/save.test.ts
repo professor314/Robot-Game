@@ -67,4 +67,23 @@ describe('save/load round-trip', () => {
     const world = new WorldState();
     expect(() => deserialize(world, { version: SAVE_VERSION })).toThrow(SaveLoadError);
   });
+
+  it('round-trips v3 story / mission / key / ranged state', () => {
+    const source = new WorldState({ seed: 7, botId: 'tread' });
+    source.story.beginRestoring();
+    source.story.recoverComponent('reactor-core', 'Reactor Core');
+    source.story.installComponent('reactor-core');
+    source.missions.complete('reactor-core');
+    source.keys.add('dock-key');
+    source.rangedUnlocked = true;
+    const json = serializeToJson(source);
+
+    const fresh = new WorldState({ seed: 7, botId: 'tread' });
+    deserializeFromJson(fresh, json);
+    expect(fresh.story.phase).toBe('restoring');
+    expect(fresh.story.installed.has('reactor-core')).toBe(true);
+    expect(fresh.missions.statusOf('reactor-core')).toBe('complete');
+    expect(fresh.keys.has('dock-key')).toBe(true);
+    expect(fresh.rangedUnlocked).toBe(true);
+  });
 });

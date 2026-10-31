@@ -1,8 +1,16 @@
 import { SfxName, playSfx } from './sfx';
-import { COMBAT_THEME, EXPLORATION_THEME, Track, scheduleTrack } from './theme';
+import {
+  BOSS_THEME,
+  COMBAT_THEME,
+  EXPLORATION_THEME,
+  MAJOR_BOSS_THEME,
+  TITLE_THEME,
+  Track,
+  scheduleTrack,
+} from './theme';
 
 /** Which music context is active. */
-export type MusicContext = 'exploration' | 'combat';
+export type MusicContext = 'title' | 'exploration' | 'combat' | 'boss' | 'majorBoss';
 
 const STORAGE_KEY = 'robot-game.audio';
 
@@ -112,7 +120,18 @@ export class AudioManager {
   }
 
   private trackFor(context: MusicContext): Track {
-    return context === 'combat' ? COMBAT_THEME : EXPLORATION_THEME;
+    switch (context) {
+      case 'title':
+        return TITLE_THEME;
+      case 'combat':
+        return COMBAT_THEME;
+      case 'boss':
+        return BOSS_THEME;
+      case 'majorBoss':
+        return MAJOR_BOSS_THEME;
+      default:
+        return EXPLORATION_THEME;
+    }
   }
 
   /** Schedule any loops whose start time is within the lookahead window. */

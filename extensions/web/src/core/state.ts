@@ -6,18 +6,32 @@ import {
   OPPOSITE,
   START_ROOM,
 } from '../data/world';
-import { HostileBrain, WorldView } from './ai';
+import {
+  KEY_CARDS,
+  ROOM_LOCKS,
+  VENDOR_ROOM,
+} from '../data/world';
+import { Brain, WorldView, brainFor } from './ai';
+import { BossBrain, makeBossEntity } from './boss';
 import { ATTACK_COOLDOWN_MS, CombatSystem, ICombatSystem } from './combat';
 import { Command } from './commands';
 import { Entity, EntityKind, Facing } from './entity';
 import { EventBus } from './events';
+import { MissionLog } from './missions';
 import { Progression } from './progression';
 import { Item, MATERIALS, assignRoomStyle, furnishRoom, interactionOf } from './props';
 import { RECIPES, recipeById } from '../data/recipes';
 import { RoomGraph } from './roomGraph';
 import { ROOM_HEIGHT, ROOM_WIDTH, Room } from './room';
 import { Rng } from './rng';
-import { clampIntegrity } from './stats';
+import { clampIntegrity, computeDamage } from './stats';
+import { Story } from './story';
+import { GUARDIANS, MAJOR_BOSS, MAJOR_BOSS_PHASE2 } from '../data/bosses';
+import { chassisById } from '../data/chassis';
+import { MISSIONS, missionById } from '../data/missions';
+import { validateKeySolvability } from './keys';
+import { logInRoom } from '../data/logs';
+import { vendorGoodById } from '../data/vendor';
 
 /** Maps a travel direction to the facing the player should adopt. */
 const FACING: Record<Direction, Facing> = {
@@ -26,6 +40,19 @@ const FACING: Record<Direction, Facing> = {
   east: 'right',
   west: 'left',
 };
+
+/** Inverse of FACING: the travel direction implied by a facing. */
+const FACING_TO_DIR: Record<Facing, Direction> = {
+  up: 'north',
+  down: 'south',
+  right: 'east',
+  left: 'west',
+};
+
+/** The direction an entity is facing, as a movement Direction. */
+function facingToDir(facing: Facing): Direction {
+  return FACING_TO_DIR[facing];
+}
 
 /** Tunable rules for player defeat and respawn. */
 export interface WorldConfig {
@@ -74,9 +101,22 @@ export class WorldState {
   readonly botId: string;
   /** Whether the mining laser has been picked up/equipped (required to mine junk). */
   miningLaserEquipped = false;
+  /** Whether the ranged weapon (Capacitor Cannon) has been crafted/unlocked. */
+  rangedUnlocked = false;
+
+  /** v3: narrative arc + mission tracking. */
+  readonly story = new Story(this.events);
+  readonly missions = new MissionLog();
+  /** Key-card ids the player holds. */
+  readonly keys = new Set<string>();
+  /** Per-chassis movement cadence (ms between steps) and dash cooldown. */
+  private moveCooldownMs = 120;
+  private dashCooldownMs = 1500;
+  /** Live dash cooldown timer (ms remaining). */
+  private dashTimerMs = 0;
 
   private readonly combat: ICombatSystem;
-  private readonly brain = new HostileBrain();
+  private readonly bossBrain = new BossBrain();
   /** Player commands queued since the last tick, resolved in order on tick. */
   private readonly commandQueue: Command[] = [];
   /**
@@ -98,6 +138,11 @@ export class WorldState {
     const startKey = options.startRoom ?? START_ROOM;
     const center = { x: Math.floor(ROOM_WIDTH / 2), y: Math.floor(ROOM_HEIGHT / 2) };
 
+    // Apply the chosen chassis's balanced-but-flavored stat profile.
+    const chassis = chassisById(this.botId);
+    this.moveCooldownMs = chassis.moveCooldownMs;
+    this.dashCooldownMs = chassis.dashCooldownMs;
+
     this.player = {
       id: 'player',
       kind: EntityKind.Player,
@@ -106,12 +151,18 @@ export class WorldState {
       x: center.x,
       y: center.y,
       facing: 'down',
-      stats: { integrity: 100, maxIntegrity: 100, processing: 10, shielding: 3 },
+      stats: {
+        integrity: chassis.maxIntegrity,
+        maxIntegrity: chassis.maxIntegrity,
+        processing: chassis.processing,
+        shielding: chassis.shielding,
+      },
       attackCooldownMs: 0,
       respawnTimerMs: 0,
       defeated: false,
       brain: null,
       spawn: { roomKey: startKey, x: center.x, y: center.y },
+      dashInvulnMs: 0,
     };
 
     // Assign art styles to every room, and furnish all but the start room (props + items)
@@ -136,12 +187,67 @@ export class WorldState {
     }
 
     this.scatterRecipes(startKey);
+    this.placeKeyCards();
+    this.placeLogs();
 
     this.spawnHostiles();
     this.spawnAmbientHostiles(startKey);
+    this.spawnBosses();
 
     // The player spawns standing on the mining laser — equip it immediately.
     this.pickup();
+
+    // Validate the key-card gating is solvable from the start; log any problems (dev aid).
+    const keyWarnings = validateKeySolvability(this.graph, startKey);
+    for (const w of keyWarnings) console.warn(`[keys] ${w.message}`);
+  }
+
+  /** The single vendor room key (for the render layer / vendor interaction). */
+  get vendorRoom(): string {
+    return VENDOR_ROOM;
+  }
+
+  /** Place each key card as a found item in its designated (open-reachable) room. */
+  private placeKeyCards(): void {
+    for (const card of KEY_CARDS) {
+      const room = this.graph.rooms.get(card.foundInRoomKey);
+      if (!room) continue;
+      const tile = this.freeInteriorTile(room);
+      if (!tile) continue;
+      room.items.push({
+        id: `keycard:${card.id}`,
+        kind: 'keycard',
+        x: tile.x,
+        y: tile.y,
+        collected: false,
+        keyId: card.id,
+      });
+    }
+  }
+
+  /** Mark rooms that contain a log entry so the render layer can show a readable terminal. */
+  private placeLogs(): void {
+    for (const room of this.graph.rooms.values()) {
+      const log = logInRoom(room.key);
+      if (log) room.logId = log.id;
+    }
+  }
+
+  /** Spawn the 7 guardian bosses and the (dormant) major boss into their rooms. */
+  private spawnBosses(): void {
+    const center = { x: Math.floor(ROOM_WIDTH / 2), y: Math.floor(ROOM_HEIGHT / 2) };
+    for (const seed of GUARDIANS) {
+      const room = this.graph.rooms.get(seed.roomKey);
+      if (!room) continue;
+      const tile = this.freeInteriorTile(room) ?? center;
+      // Clear any blocking prop under the boss so it isn't stuck.
+      room.blocked.delete(`${tile.x},${tile.y}`);
+      this.hostiles.push(makeBossEntity(seed, tile.x, tile.y));
+    }
+    // Major boss starts defeated/dormant; activated when all components are installed.
+    const major = makeBossEntity(MAJOR_BOSS, center.x, center.y);
+    major.defeated = true; // hidden until activated
+    this.hostiles.push(major);
   }
 
   /**
@@ -177,6 +283,13 @@ export class WorldState {
     }
   }
 
+  /** Brain type for each named hostile, giving them distinct behavior. */
+  private static readonly NAMED_BRAINS: Record<string, string> = {
+    'Corrupted Sentry': 'sentry',
+    'Haywire Drone': 'drone',
+    'Rogue Program': 'hunter',
+  };
+
   private makeHostile(seed: HostileSeed, x: number, y: number): Entity {
     return {
       id: `hostile:${seed.key}`,
@@ -195,7 +308,7 @@ export class WorldState {
       attackCooldownMs: 0,
       respawnTimerMs: 0,
       defeated: false,
-      brain: 'hostile',
+      brain: WorldState.NAMED_BRAINS[seed.key] ?? 'hostile',
       spawn: { roomKey: seed.location, x, y },
       reward: { xp: seed.xpReward, credits: seed.creditsReward, salvage: seed.salvage },
       aggroRange: 5,
@@ -244,7 +357,8 @@ export class WorldState {
       attackCooldownMs: 0,
       respawnTimerMs: 0,
       defeated: false,
-      brain: 'hostile',
+      // Patrols vary their behavior (seeded) so rooms don't all feel identical.
+      brain: this.rng.pick(['drone', 'crawler', 'hunter', 'hostile']),
       spawn: { roomKey, x, y },
       reward: { xp: 30, credits: 10, salvage: [] },
       aggroRange: 4,
@@ -284,7 +398,10 @@ export class WorldState {
     this.combat.tickCooldowns(this.allEntities(), dtMs);
     this.progression.tickSkills(dtMs);
     this.tickBuffs(dtMs);
+    this.tickCooldownTimers(dtMs);
+    this.tickTelegraphs(dtMs);
     this.tickRespawns(dtMs);
+    this.maybeActivateMajorBoss();
 
     // Resolve queued player commands.
     for (const cmd of this.commandQueue) this.resolvePlayerCommand(cmd);
@@ -301,14 +418,57 @@ export class WorldState {
     }
   }
 
+  /** Advance the player's dash cooldown and dash invulnerability. */
+  private tickCooldownTimers(dtMs: number): void {
+    if (this.dashTimerMs > 0) this.dashTimerMs = Math.max(0, this.dashTimerMs - dtMs);
+    const p = this.player;
+    if ((p.dashInvulnMs ?? 0) > 0) p.dashInvulnMs = Math.max(0, (p.dashInvulnMs ?? 0) - dtMs);
+  }
+
+  /** The chassis's movement cadence (ms between held-key steps); read by the render layer. */
+  get moveIntervalMs(): number {
+    return this.moveCooldownMs;
+  }
+
   /**
-   * Decrement respawn timers; revive hostiles when their timer elapses. Player defeat is
-   * terminal (game over) and handled by the UI restart flow rather than an auto-respawn — but
-   * `respawnPlayer()` remains available for a configurable in-place respawn if re-enabled.
+   * Count down any entity's telegraphed heavy attack; when the wind-up elapses, land the hit
+   * (with knockback) if the player is still adjacent and not dashing through i-frames.
+   */
+  private tickTelegraphs(dtMs: number): void {
+    for (const e of this.hostiles) {
+      if (e.defeated || (e.windupMs ?? 0) <= 0) continue;
+      e.windupMs = Math.max(0, (e.windupMs ?? 0) - dtMs);
+      if (e.windupMs > 0) continue;
+      // Wind-up finished: resolve the heavy hit.
+      const heavy = e.pendingHeavy ?? 0;
+      e.pendingHeavy = 0;
+      const adjacent = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y) <= 1;
+      if (e.roomKey === this.player.roomKey && adjacent) {
+        this.landHeavy(e, heavy);
+      }
+    }
+  }
+
+  /** Activate the dormant major boss once all 7 components are installed. */
+  private maybeActivateMajorBoss(): void {
+    if (!this.story.allInstalled) return;
+    const major = this.hostiles.find((h) => h.bossId === MAJOR_BOSS.id);
+    if (major && major.defeated && !this.story.bossesDefeated.has(MAJOR_BOSS.id)) {
+      major.defeated = false;
+      major.stats.integrity = major.stats.maxIntegrity;
+      major.roomKey = MAJOR_BOSS.roomKey;
+      this.events.emit({ type: 'bossEngaged', bossId: MAJOR_BOSS.id, major: true });
+      this.events.emit({ type: 'log', message: 'The Station Core awakens at the Docking Port.', tone: 'bad' });
+    }
+  }
+
+  /**
+   * Decrement respawn timers; revive non-boss hostiles when their timer elapses. Bosses never
+   * respawn. Player defeat is terminal (game over), handled by the UI restart flow.
    */
   private tickRespawns(dtMs: number): void {
     for (const h of this.hostiles) {
-      if (!h.defeated) continue;
+      if (!h.defeated || h.bossId) continue; // bosses stay down
       h.respawnTimerMs -= dtMs;
       if (h.respawnTimerMs <= 0) this.respawnHostile(h);
     }
@@ -325,6 +485,12 @@ export class WorldState {
       case 'attack':
         this.playerAttack();
         break;
+      case 'dash':
+        this.dash();
+        break;
+      case 'rangedAttack':
+        this.rangedAttack();
+        break;
       case 'useSkill':
         this.useSkill(cmd.skillId);
         break;
@@ -337,8 +503,80 @@ export class WorldState {
       case 'craft':
         this.craft(cmd.recipeId);
         break;
+      case 'buy':
+        this.buy(cmd.goodId);
+        break;
       default:
         break;
+    }
+  }
+
+  /** Dash up to N tiles in the facing direction, stopping at walls/occupied tiles; i-frames. */
+  private static readonly DASH_TILES = 3;
+  private static readonly DASH_INVULN_MS = 350;
+
+  private dash(): void {
+    if (this.dashTimerMs > 0) return;
+    const p = this.player;
+    const dir = facingToDir(p.facing);
+    const { dx, dy } = DELTA[dir];
+    const room = this.currentRoom;
+    let moved = 0;
+    for (let i = 0; i < WorldState.DASH_TILES; i++) {
+      const nx = p.x + dx;
+      const ny = p.y + dy;
+      if (!room.isWalkable(nx, ny)) break;
+      if (!this.tileFreeOfActors(p.roomKey, nx, ny, p.id)) break;
+      p.x = nx;
+      p.y = ny;
+      moved++;
+    }
+    this.dashTimerMs = this.dashCooldownMs;
+    p.dashInvulnMs = WorldState.DASH_INVULN_MS;
+    if (moved > 0) {
+      this.events.emit({ type: 'dashed', entityId: p.id, x: p.x, y: p.y });
+      this.events.emit({ type: 'moved', entityId: p.id, roomKey: p.roomKey, x: p.x, y: p.y });
+      this.pickup();
+    }
+  }
+
+  /** Fire the ranged weapon along the facing line; hits the first hostile in the room. */
+  private rangedAttack(): void {
+    if (!this.rangedUnlocked) {
+      this.events.emit({ type: 'log', message: 'No ranged weapon — craft the Capacitor Cannon', tone: 'bad' });
+      return;
+    }
+    if (this.player.attackCooldownMs > 0) return;
+    const p = this.player;
+    const dir = facingToDir(p.facing);
+    const { dx, dy } = DELTA[dir];
+    const room = this.currentRoom;
+    let x = p.x + dx;
+    let y = p.y + dy;
+    let hit: Entity | null = null;
+    // March along the line until a wall or the first live hostile.
+    for (let range = 0; range < Math.max(ROOM_WIDTH, ROOM_HEIGHT); range++) {
+      if (x < 0 || y < 0 || x >= ROOM_WIDTH || y >= ROOM_HEIGHT) break;
+      if (room.tiles[x][y] === undefined) break;
+      const target = this.hostiles.find((h) => !h.defeated && h.roomKey === p.roomKey && h.x === x && h.y === y);
+      if (target) { hit = target; break; }
+      if (!room.isWalkable(x, y)) break; // blocked by wall/prop
+      x += dx;
+      y += dy;
+    }
+    this.player.attackCooldownMs = ATTACK_COOLDOWN_MS;
+    this.events.emit({
+      type: 'rangedFired', fromX: p.x, fromY: p.y, toX: x, toY: y, hitId: hit?.id ?? null,
+    });
+    if (hit) {
+      const dmg = Math.max(1, computeDamage(p.stats, hit.stats));
+      hit.stats.integrity -= dmg;
+      this.events.emit({ type: 'attacked', attackerId: p.id, targetId: hit.id, damage: dmg });
+      if (hit.stats.integrity <= 0) {
+        hit.defeated = true;
+        this.events.emit({ type: 'defeated', entityId: hit.id, byId: p.id });
+        this.onHostileDefeated(hit);
+      }
     }
   }
 
@@ -382,6 +620,24 @@ export class WorldState {
           tone: 'good',
         });
       }
+      return;
+    }
+
+    if (item.kind === 'keycard' && item.keyId) {
+      this.keys.add(item.keyId);
+      const card = KEY_CARDS.find((k) => k.id === item.keyId);
+      this.events.emit({ type: 'keyFound', keyId: item.keyId, name: card?.name ?? item.keyId });
+      this.events.emit({ type: 'log', message: `Found key card: ${card?.name ?? item.keyId}`, tone: 'good' });
+      return;
+    }
+
+    if (item.kind === 'component') {
+      // Recovering the component is handled on boss defeat; picking it up just confirms carry.
+      this.events.emit({
+        type: 'log',
+        message: `Carrying ${missionById(item.componentId ?? '')?.componentName ?? 'component'} — install it at its bay (E)`,
+        tone: 'good',
+      });
       return;
     }
 
@@ -470,11 +726,96 @@ export class WorldState {
       case 'miningLaser':
         this.progression.miningLevel += eff.speedup;
         break;
+      case 'rangedWeapon':
+        this.rangedUnlocked = true;
+        p.stats.processing += eff.processing;
+        this.progression.upgradeWeapon();
+        this.progression.chassisEquipped = true;
+        break;
+    }
+    if (eff.kind === 'maxIntegrity') {
+      this.events.emit({ type: 'maxIntegrityRaised', amount: eff.amount, maxIntegrity: p.stats.maxIntegrity });
     }
 
     this.events.emit({ type: 'crafted', recipeId, name: recipe.name });
     this.events.emit({ type: 'log', message: `Crafted ${recipe.name}`, tone: 'good' });
     this.tryUnlockProfessions();
+  }
+
+  /**
+   * Buy a vendor good with credits (only works in the vendor room). Validates affordability,
+   * deducts credits, and applies the good's effect.
+   */
+  private buy(goodId: string): void {
+    const good = vendorGoodById(goodId);
+    if (!good) return;
+    if (this.player.roomKey !== VENDOR_ROOM) {
+      this.events.emit({ type: 'log', message: 'No vendor here', tone: 'bad' });
+      return;
+    }
+    if (this.progression.credits < good.price) {
+      this.events.emit({ type: 'log', message: `Not enough credits for ${good.name}`, tone: 'bad' });
+      return;
+    }
+    this.progression.credits -= good.price;
+    const p = this.player;
+    switch (good.effect.kind) {
+      case 'repair':
+        p.stats.integrity += good.effect.integrity;
+        clampIntegrity(p.stats);
+        break;
+      case 'material':
+        this.progression.addToInventory(good.effect.resource, good.effect.amount);
+        break;
+      case 'maxIntegrity':
+        p.stats.maxIntegrity += good.effect.amount;
+        p.stats.integrity += good.effect.amount;
+        clampIntegrity(p.stats);
+        this.events.emit({ type: 'maxIntegrityRaised', amount: good.effect.amount, maxIntegrity: p.stats.maxIntegrity });
+        break;
+    }
+    this.events.emit({ type: 'purchased', goodId, name: good.name, credits: this.progression.credits });
+    this.events.emit({ type: 'log', message: `Purchased ${good.name}`, tone: 'good' });
+  }
+
+  /**
+   * If the current room is the install point for a recovered-but-not-installed component,
+   * install it: mark the room/mission/story, advance the arc. Returns true if it acted.
+   */
+  private tryInstallComponent(room: Room): boolean {
+    const mission = MISSIONS.find((m) => m.installRoomKey === room.key);
+    if (!mission) return false;
+    if (room.componentInstalled) return false;
+    if (!this.story.hasRecovered(mission.id)) {
+      // In the install room but without the part yet.
+      this.events.emit({
+        type: 'log',
+        message: `Install point for ${mission.componentName} — recover it first.`,
+        tone: 'info',
+      });
+      return true;
+    }
+    this.story.installComponent(mission.id);
+    this.missions.complete(mission.id);
+    room.componentInstalled = true;
+    this.events.emit({ type: 'missionUpdated', missionId: mission.id, status: 'complete' });
+    this.events.emit({
+      type: 'log',
+      message: `Installed ${mission.componentName}. (${this.story.installed.size}/${MISSIONS.length})`,
+      tone: 'good',
+    });
+    return true;
+  }
+
+  /** Read this room's log entry if present and unread. Returns true if it acted. */
+  private tryReadLog(room: Room): boolean {
+    if (!room.logId) return false;
+    if (this.story.logsRead.has(room.logId)) return false;
+    if (this.story.readLog(room.logId)) {
+      this.events.emit({ type: 'log', message: 'Log entry recorded (see Logs).', tone: 'info' });
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -485,10 +826,17 @@ export class WorldState {
   private interact(): void {
     const room = this.currentRoom;
     const p = this.player;
+
+    // Priority: an adjacent interactable prop (mine/heal) wins; then installing a component;
+    // then reading this room's log. This keeps "press E next to the heal bay" unambiguous.
     const prop = room.props.find(
       (pr) => interactionOf(pr.kind) !== null && Math.abs(pr.x - p.x) + Math.abs(pr.y - p.y) <= 1,
     );
-    if (!prop) return;
+    if (!prop) {
+      if (this.tryInstallComponent(room)) return;
+      if (this.tryReadLog(room)) return;
+      return;
+    }
 
     switch (interactionOf(prop.kind)) {
       case 'mine': {
@@ -608,7 +956,7 @@ export class WorldState {
     }
   }
 
-  /** Grant rewards, emit events, and schedule the hostile's respawn. */
+  /** Grant rewards, emit events, and (for non-bosses) schedule respawn. */
   private onHostileDefeated(hostile: Entity): void {
     const reward = hostile.reward;
     if (reward) {
@@ -624,9 +972,46 @@ export class WorldState {
       });
       if (leveled !== null) this.onLevelUp(before, leveled);
     }
+
+    // Bosses: drop their component, announce, and never respawn.
+    if (hostile.bossId) {
+      this.events.emit({ type: 'bossDefeated', bossId: hostile.bossId, major: !!hostile.major });
+      this.story.bossDefeated(hostile.bossId, !!hostile.major);
+      if (hostile.dropsComponent) {
+        this.dropComponent(hostile, hostile.dropsComponent);
+      }
+      if (hostile.major) {
+        this.events.emit({ type: 'log', message: 'The Station Core goes dark. The way home is open.', tone: 'good' });
+      }
+      hostile.respawnTimerMs = 0; // stays defeated
+      return;
+    }
+
     this.dropLoot(hostile);
     const seed = HOSTILES.find((h) => `hostile:${h.key}` === hostile.id);
     hostile.respawnTimerMs = (seed?.respawnDelaySec ?? 60) * 1000;
+  }
+
+  /** Drop a ship component item at a defeated guardian's tile and mark it recovered. */
+  private dropComponent(boss: Entity, componentId: string): void {
+    const room = this.graph.rooms.get(boss.roomKey);
+    const mission = missionById(componentId);
+    if (room) {
+      room.items.push({
+        id: `component:${componentId}`,
+        kind: 'component',
+        x: boss.x,
+        y: boss.y,
+        collected: false,
+        componentId,
+      });
+    }
+    this.story.recoverComponent(componentId, mission?.componentName ?? componentId);
+    this.events.emit({
+      type: 'log',
+      message: `Recovered: ${mission?.componentName ?? componentId}. Install it at ${mission?.installRoomKey ?? 'its bay'}.`,
+      tone: 'good',
+    });
   }
 
   /** Per-level stat gains, so leveling actually makes the player stronger. */
@@ -721,7 +1106,10 @@ export class WorldState {
     };
     for (const h of this.hostiles) {
       if (h.defeated) continue;
-      const cmd = this.brain.decide(h, view);
+      if ((h.windupMs ?? 0) > 0) continue; // mid-telegraph: don't also move/attack
+      // Bosses use the boss brain; others use their per-type brain.
+      const brain: Brain = h.bossId ? this.bossBrain : brainFor(h.brain);
+      const cmd = brain.decide(h, view);
       if (!cmd) continue;
       this.applyHostileCommand(h, cmd);
     }
@@ -747,7 +1135,47 @@ export class WorldState {
     } else if (cmd.type === 'attack') {
       const result = this.combat.resolveAttack(hostile, this.player);
       if (result.defeated) this.onPlayerDefeated(hostile);
+    } else if (cmd.type === 'heavyAttack') {
+      this.beginHeavyAttack(hostile);
     }
+  }
+
+  /** Begin a telegraphed heavy attack: set the wind-up and announce it so the player can dodge. */
+  private beginHeavyAttack(boss: Entity): void {
+    const seed = [...GUARDIANS, MAJOR_BOSS].find((b) => b.id === boss.bossId);
+    let windup = seed?.windupMs ?? 700;
+    let heavy = seed?.heavyDamage ?? 18;
+    // Major boss second phase: faster + harder once below the HP threshold.
+    if (boss.major && boss.stats.integrity < boss.stats.maxIntegrity * MAJOR_BOSS_PHASE2) {
+      windup = Math.round(windup * 0.6);
+      heavy = Math.round(heavy * 1.3);
+    }
+    boss.windupMs = windup;
+    boss.pendingHeavy = heavy;
+    this.events.emit({ type: 'telegraph', entityId: boss.id, windupMs: windup });
+  }
+
+  /** Land a heavy hit: big damage (reduced by shielding, ignored during i-frames) + knockback. */
+  private landHeavy(boss: Entity, heavy: number): void {
+    const p = this.player;
+    if ((p.dashInvulnMs ?? 0) > 0) {
+      this.events.emit({ type: 'log', message: 'Dodged the heavy attack!', tone: 'good' });
+      return;
+    }
+    const dmg = Math.max(1, heavy - p.stats.shielding);
+    p.stats.integrity -= dmg;
+    this.events.emit({ type: 'attacked', attackerId: boss.id, targetId: p.id, damage: dmg });
+    // Knockback: push the player one tile away from the boss if that tile is free.
+    const kx = p.x + Math.sign(p.x - boss.x);
+    const ky = p.y + Math.sign(p.y - boss.y);
+    const room = this.graph.rooms.get(p.roomKey);
+    if (room && room.isWalkable(kx, ky) && this.tileFreeOfActors(p.roomKey, kx, ky, p.id)) {
+      p.x = kx;
+      p.y = ky;
+      this.events.emit({ type: 'knockback', entityId: p.id, x: kx, y: ky });
+      this.events.emit({ type: 'moved', entityId: p.id, roomKey: p.roomKey, x: kx, y: ky });
+    }
+    if (p.stats.integrity <= 0) this.onPlayerDefeated(boss);
   }
 
   /** True if no live actor (player or hostile, excluding `excludeId`) occupies the tile. */
@@ -820,6 +1248,17 @@ export class WorldState {
     if (!toKey) return;
     const toRoom = this.graph.rooms.get(toKey);
     if (!toRoom) return;
+
+    // Key-card gating: a room is locked until the player holds its key (all doors into the
+    // room share the same key by construction).
+    const requiredKey = ROOM_LOCKS[toKey];
+    if (requiredKey && !this.keys.has(requiredKey)) {
+      const card = KEY_CARDS.find((k) => k.id === requiredKey);
+      this.events.emit({ type: 'doorLocked', roomKey: toKey, requiredKey });
+      this.events.emit({ type: 'log', message: `Locked — need ${card?.name ?? requiredKey}`, tone: 'bad' });
+      return;
+    }
+    if (requiredKey) this.events.emit({ type: 'doorUnlocked', roomKey: toKey });
 
     const back = OPPOSITE[dir];
     const entry = toRoom.doorTile(back);

@@ -11,7 +11,7 @@ Three tracks live side by side:
 |---|---|---|
 | **Original** | `original/` | The 2014 C# WinForms game (.NET Framework 3.5), preserved exactly as submitted. |
 | **WinForms port** | `extensions/csharp-winforms/` | A faithful .NET 8 WinForms port with the database removed — the original lineage, runnable on a modern machine. |
-| **Web game** | `extensions/web/` | The souped-up rewrite: TypeScript + Phaser 3, sci-fi themed, scrolling room-to-room exploration, real-time combat, progression, save/load, audio, and an AI agent API. |
+| **Web game** | `extensions/web/` | The souped-up rewrite: TypeScript + Phaser 3, sci-fi themed, with a full **"Restore the Ship"** story arc — 7 component missions, 8 bosses, key cards, dash/ranged combat, a vendor, a station map, logs, flavored chassis, progression, save/load, original audio, and an AI agent API. |
 
 The two rewrites deliberately share no code (different languages, different platforms). What
 they share is *lineage*: the web game inherits the original's tile-room idea and the author's
@@ -40,10 +40,11 @@ Robot-Game/
 │       ├── src/render/            # Phaser scenes, HUD, persistence, settings
 │       ├── src/audio/             # chiptune synth, theme, SFX, AudioManager
 │       ├── src/agent/             # Agent_API + example agents + debug hook
-│       ├── src/data/              # seed data derived from space-mud
-│       ├── public/assets/kenney/  # Kenney CC0 sci-fi art (see ASSETS.md)
+│       ├── src/data/              # seed data (missions, bosses, chassis, logs, vendor, world)
+│       ├── public/assets/art/     # original neon-robot SVG art (see ASSETS.md)
 │       └── tests/                 # Vitest headless Core tests
-├── .kiro/specs/dungeon-rpg-v2/    # requirements, design, tasks
+├── .kiro/specs/dungeon-rpg-v2/    # foundation spec: requirements, design, tasks
+├── .kiro/specs/robot-game-v3/     # "Restore the Ship" spec: requirements, design, tasks
 └── README.md
 ```
 
@@ -78,12 +79,19 @@ dotnet test      # xUnit tests over RobotGame.Core
 |---|---|
 | Arrow keys / WASD | Move one tile (through doors to scroll to the next room) |
 | Space / F | Attack an adjacent hostile |
+| Shift | Dash (i-frames, cooldown) |
+| R | Ranged attack (once a ranged weapon is crafted) |
+| E | Interact: mine / repair / install a component / read a log |
+| Q / Z | Overclock / Nanite Repair |
+| I / C | Inventory / Crafting panel |
+| T / L | Station map / Data logs |
+| V | Vendor (in the vendor room) |
 | O / P | Save / load |
 | M | Mute / unmute audio |
 | G | Toggle game-feel (hit flash, damage numbers, screen shake) |
 
-Audio starts on the first key press (browser autoplay policy). Music shifts to a combat
-variant when a hostile shares your room.
+See `PLAYING.md` for the full player's guide. Audio starts on the first key press (browser
+autoplay policy); the music shifts between title, exploration, combat, and boss themes.
 
 ## Theme & relationship to `space-mud`
 
@@ -95,10 +103,11 @@ model carries over directly: **integrity** (health), **processing** (attack outp
 Rooms are rendered as explorable 2D tile areas rather than text, with fog of war and a
 scrolling camera that keeps visited rooms on screen.
 
-Art is the **Kenney "Sci-Fi RTS"** pack (CC0, public domain). Music and SFX are **original**
-8-bit chiptune generated at runtime via the Web Audio API, composed in the *style* of
-late-1980s Sunsoft NES soundtracks — no copyrighted audio, MIDI, or NSF data is included. See
-`extensions/web/ASSETS.md` for every asset and its license.
+All art is **original**, authored for this project in the imadestuff.com neon-on-dark robot
+style (SVGs in `public/assets/art/`, regenerated via `scripts/make_art.py`). Music and SFX are
+also **original** 8-bit chiptune generated at runtime via the Web Audio API, composed in the
+*style* of late-1980s Sunsoft NES soundtracks — no copyrighted art, audio, MIDI, or NSF data is
+included. See `extensions/web/ASSETS.md` for every asset and its license.
 
 ## Agent API
 
@@ -144,6 +153,10 @@ sub-path, not just a site root. To embed it as a page on the `imadestuff-blog` H
 - Core game logic separated from the UI in both rewrites, making it unit-testable headlessly.
 - The web game adds scrolling room-to-room exploration, fog of war, real-time combat with AI,
   the MUD's progression model, save/load, original chiptune audio, and an AI agent API.
+- v3 ("Restore the Ship") layers on a full story arc with a win condition: 7 component-recovery
+  missions, 8 bosses (7 guardians + 1 major), key-card-gated rooms, dash and ranged combat with
+  telegraphs and knockback, a credits vendor, a station map, discoverable logs, and four
+  balanced-but-flavored chassis.
 
 ## Known limitations
 

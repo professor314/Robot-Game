@@ -1,45 +1,102 @@
 /**
- * Optional, non-mandatory missions seeded from the space MUD's missions data. The game is
- * open-ended with no win condition (Requirement 8); these exist only as self-directed goals
- * the player may pursue or ignore. Completion is tracked but never gates play.
+ * The 7 restoration missions. Each recovers one Ship_Component from a Guardian_Boss and installs
+ * it at an Install_Point in a thematically fitting room. Missions are pure data; `core/missions.ts`
+ * tracks their runtime status and `core/story.ts` tracks overall arc progress.
+ *
+ * Key gating (see data/world.ts): some install rooms sit behind a Key_Card. Keys are placed so
+ * the chain is always solvable from the start (no key gates the room that contains it).
  */
 
-/** A kind of objective a mission tracks. */
-export type MissionGoal =
-  | { kind: 'defeat'; hostileKey: string; count: number }
-  | { kind: 'visit'; roomKey: string }
-  | { kind: 'collect'; salvage: string; count: number };
-
-/** An optional mission definition. */
+/** A ship component recovered and then installed to restore the ship. */
 export interface MissionSeed {
+  /** Stable id (also the component id). */
   id: string;
+  /** Player-facing mission name. */
   name: string;
-  description: string;
-  goal: MissionGoal;
-  rewardCredits: number;
+  /** Short objective line for the HUD. */
+  objective: string;
+  /** The component's display name. */
+  componentName: string;
+  /** The guardian boss (in data/bosses.ts) that drops this component. */
+  guardianBossId: string;
+  /** The room where this component is recovered (the guardian's room). */
+  guardianRoomKey: string;
+  /** The room holding the Install_Point for this component. */
+  installRoomKey: string;
 }
 
-/** The optional missions available in the world. */
+/**
+ * Seven missions. The components are the recognizable systems of a ship: power, navigation,
+ * life support, comms, propulsion, shielding, and the flight computer. Install rooms match
+ * their function (reactor core → Reactor Terminal, nav → Observation Deck, etc.).
+ */
 export const MISSIONS: MissionSeed[] = [
   {
-    id: 'clear-cargo',
-    name: 'Clear the Cargo Wreck',
-    description: 'Neutralize the Corrupted Sentry haunting the Cargo Wreck.',
-    goal: { kind: 'defeat', hostileKey: 'Corrupted Sentry', count: 1 },
-    rewardCredits: 50,
+    id: 'reactor-core',
+    name: 'Restore Power',
+    objective: 'Recover the reactor core and install it in the Reactor Terminal.',
+    componentName: 'Reactor Core',
+    guardianBossId: 'guardian-sentinel',
+    guardianRoomKey: 'Storage Hub',
+    installRoomKey: 'Reactor Terminal',
   },
   {
-    id: 'reach-array',
-    name: 'Restore Contact',
-    description: 'Make your way to the Communications Array.',
-    goal: { kind: 'visit', roomKey: 'Communications Array' },
-    rewardCredits: 30,
+    id: 'nav-array',
+    name: 'Fix Navigation',
+    objective: 'Recover the navigation array and install it on the Observation Deck.',
+    componentName: 'Navigation Array',
+    guardianBossId: 'guardian-watcher',
+    guardianRoomKey: 'Data Core',
+    installRoomKey: 'Observation Deck',
   },
   {
-    id: 'salvage-run',
-    name: 'Salvage Run',
-    description: 'Recover an artifact from a defeated hostile.',
-    goal: { kind: 'collect', salvage: 'artifact', count: 1 },
-    rewardCredits: 40,
+    id: 'life-support',
+    name: 'Seal Life Support',
+    objective: 'Recover the life-support unit and install it in the Repair Bay.',
+    componentName: 'Life-Support Unit',
+    guardianBossId: 'guardian-warden',
+    guardianRoomKey: 'Maintenance Shaft',
+    installRoomKey: 'Repair Bay',
+  },
+  {
+    id: 'comms-relay',
+    name: 'Reopen Comms',
+    objective: 'Recover the comms relay and install it in the Communications Array.',
+    componentName: 'Comms Relay',
+    guardianBossId: 'guardian-breaker',
+    guardianRoomKey: 'Breached Lab',
+    installRoomKey: 'Communications Array',
+  },
+  {
+    id: 'thruster-assembly',
+    name: 'Mount Thrusters',
+    objective: 'Recover the thruster assembly and install it at the Docking Port.',
+    componentName: 'Thruster Assembly',
+    guardianBossId: 'guardian-hauler',
+    guardianRoomKey: 'Cargo Wreck',
+    installRoomKey: 'Docking Port',
+  },
+  {
+    id: 'shield-emitter',
+    name: 'Raise Shields',
+    objective: 'Recover the shield emitter and install it in the Crew Remnants bay.',
+    componentName: 'Shield Emitter',
+    guardianBossId: 'guardian-bastion',
+    guardianRoomKey: 'Debris Drift',
+    installRoomKey: 'Crew Remnants',
+  },
+  {
+    id: 'flight-computer',
+    name: 'Boot the Flight Computer',
+    objective: 'Recover the flight computer and install it in the Airlock control.',
+    componentName: 'Flight Computer',
+    guardianBossId: 'guardian-cipher',
+    guardianRoomKey: 'Collapsed Corridor',
+    installRoomKey: 'Airlock',
   },
 ];
+
+/** Look up a mission (and thus component) by id. */
+export function missionById(id: string): MissionSeed | undefined {
+  return MISSIONS.find((m) => m.id === id);
+}

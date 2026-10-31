@@ -2,9 +2,10 @@ import { Entity, Facing } from './entity';
 import { Progression } from './progression';
 import { Item, Prop, propBlocks } from './props';
 import { WorldState } from './state';
+import { StorySnapshot } from './story';
 
 /** Current save schema version. Bump when the shape changes incompatibly. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** Serialized stats. */
 interface StatsSnapshot {
@@ -49,18 +50,28 @@ interface RoomContentSnapshot {
   items: Item[];
 }
 
+/** Serialized room contents (props + items), so mining and dropped loot persist. */
+interface RoomContentSnapshotV3 extends RoomContentSnapshot {
+  componentInstalled: boolean;
+}
+
 /** The complete, versioned, serializable game state. */
 export interface SaveData {
   version: number;
   seed: number;
   botId: string;
   miningLaserEquipped: boolean;
+  rangedUnlocked: boolean;
   player: EntitySnapshot;
   hostiles: EntitySnapshot[];
   visitedRooms: string[];
-  /** Full room contents (props + items) so mined ore and dropped loot survive a reload. */
-  rooms: RoomContentSnapshot[];
+  /** Full room contents (props + items + install flag) so world progress survives a reload. */
+  rooms: RoomContentSnapshotV3[];
   progression: ProgressionSnapshot;
+  /** v3 narrative/mission/key state. */
+  story: StorySnapshot;
+  missionsComplete: string[];
+  keys: string[];
 }
 
 function snapshotEntity(e: Entity): EntitySnapshot {
@@ -132,21 +143,26 @@ function restoreProgression(p: Progression, snap: ProgressionSnapshot): void {
 
 /** Build a versioned snapshot of the world. Lives in Core so it works headless and serverside. */
 export function serialize(world: WorldState): SaveData {
-  const rooms: RoomContentSnapshot[] = [...world.graph.rooms.values()].map((room) => ({
+  const rooms: RoomContentSnapshotV3[] = [...world.graph.rooms.values()].map((room) => ({
     key: room.key,
     props: room.props.map((p) => ({ ...p })),
     items: room.items.map((it) => ({ ...it })),
+    componentInstalled: room.componentInstalled,
   }));
   return {
     version: SAVE_VERSION,
     seed: world.seed,
     botId: world.botId,
     miningLaserEquipped: world.miningLaserEquipped,
+    rangedUnlocked: world.rangedUnlocked,
     player: snapshotEntity(world.player),
     hostiles: world.hostiles.map(snapshotEntity),
     visitedRooms: [...world.graph.rooms.values()].filter((r) => r.visited).map((r) => r.key),
     rooms,
     progression: snapshotProgression(world.progression),
+    story: world.story.snapshot(),
+    missionsComplete: world.missions.snapshot(),
+    keys: [...world.keys],
   };
 }
 
@@ -206,11 +222,19 @@ export function deserialize(world: WorldState, data: unknown): void {
     if (!snap) continue;
     room.props = snap.props.map((p) => ({ ...p }));
     room.items = snap.items.map((it) => ({ ...it }));
+    room.componentInstalled = snap.componentInstalled ?? false;
     room.blocked.clear();
     for (const p of room.props) if (propBlocks(p.kind)) room.blocked.add(`${p.x},${p.y}`);
   }
 
   restoreProgression(world.progression, save.progression);
+
+  // v3 narrative/mission/key state.
+  world.rangedUnlocked = save.rangedUnlocked ?? false;
+  if (save.story) world.story.restore(save.story);
+  world.missions.restore(save.missionsComplete ?? []);
+  world.keys.clear();
+  for (const k of save.keys ?? []) world.keys.add(k);
 }
 
 /** Parse a JSON save string and apply it. Throws SaveLoadError on malformed input. */

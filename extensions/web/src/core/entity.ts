@@ -42,6 +42,20 @@ export interface Entity {
   reward?: { xp: number; credits: number; salvage: string[] };
   /** Aggro range in tiles (hostiles only). */
   aggroRange?: number;
+
+  // --- v3 fields ---
+  /** Boss id (set for guardian/major bosses); drives boss behavior + no-respawn. */
+  bossId?: string;
+  /** True for the final major boss. */
+  major?: boolean;
+  /** Ship component this entity drops when defeated (guardian bosses). */
+  dropsComponent?: string;
+  /** Remaining wind-up (ms) before a telegraphed heavy attack lands; 0 = none pending. */
+  windupMs?: number;
+  /** Damage of the pending heavy attack once the wind-up elapses. */
+  pendingHeavy?: number;
+  /** Remaining dash invulnerability (ms); while > 0 the entity ignores incoming damage. */
+  dashInvulnMs?: number;
 }
 
 /** Manhattan distance between two entities assumed to be in the same room. */

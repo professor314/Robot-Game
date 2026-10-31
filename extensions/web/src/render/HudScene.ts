@@ -14,14 +14,14 @@ const LOG_LINES = 6;
 const CONTROLS: [string, string][] = [
   ['Move', 'WASD / Arrows'],
   ['Attack', 'Space / F'],
-  ['Mine / use', 'E'],
-  ['Pick up', 'automatic'],
-  ['Overclock', 'Q'],
-  ['Nanite Repair', 'Z'],
-  ['Inventory', 'I'],
-  ['Craft', 'C'],
-  ['Save / Load', 'O / P'],
-  ['Mute', 'M'],
+  ['Dash', 'Shift'],
+  ['Ranged', 'R'],
+  ['Interact / install', 'E'],
+  ['Overclock / Repair', 'Q / Z'],
+  ['Inventory / Craft', 'I / C'],
+  ['Map / Logs', 'T / L'],
+  ['Vendor', 'V'],
+  ['Save / Load / Mute', 'O / P / M'],
 ];
 
 /**
@@ -35,6 +35,7 @@ export class HudScene extends Phaser.Scene {
   private barFill!: Phaser.GameObjects.Rectangle;
   private statusText!: Phaser.GameObjects.Text;
   private roomText!: Phaser.GameObjects.Text;
+  private objectiveText!: Phaser.GameObjects.Text;
   private logText!: Phaser.GameObjects.Text;
   private controlsBox!: Phaser.GameObjects.Container;
   private inventoryBox!: Phaser.GameObjects.Container;
@@ -62,6 +63,13 @@ export class HudScene extends Phaser.Scene {
     this.barFill = this.add.rectangle(11, 25, 178, 12, 0x3fd1c7).setOrigin(0, 0);
     this.statusText = this.add.text(10, 44, '', style);
     this.roomText = this.add.text(10, 64, '', { ...style, color: '#bdeaf6' });
+    // Objective tracker (top-centre).
+    this.objectiveText = this.add.text(this.scale.width / 2, 10, '', {
+      ...style,
+      fontSize: '13px',
+      color: '#ffe08a',
+      align: 'center',
+    }).setOrigin(0.5, 0);
 
     // Event log (anchored above the controls box, bottom-left).
     this.logText = this.add.text(10, 0, '', {
@@ -150,9 +158,11 @@ export class HudScene extends Phaser.Scene {
   private refreshInventory(): void {
     const prog = this.world.state.progression;
     const lines: string[] = [];
-    lines.push(`Weapon: Mk.${prog.weaponLevel + 1}`);
+    lines.push(`Weapon: Mk.${prog.weaponLevel + 1}${this.world.state.rangedUnlocked ? ' (ranged)' : ''}`);
     lines.push(`Mining laser: ${this.world.state.miningLaserEquipped ? `Mk.${prog.miningLevel + 1}` : 'none'}`);
     lines.push(`Shielding: ${this.world.state.player.stats.shielding}   Credits: ${prog.credits}`);
+    const keys = [...this.world.state.keys];
+    lines.push(`Key cards: ${keys.length ? keys.join(', ') : 'none'}`);
     lines.push('');
     lines.push('Skills:');
     for (const s of prog.skills) {
@@ -235,6 +245,7 @@ export class HudScene extends Phaser.Scene {
     // Inventory panel (left) and crafting panel (centered-ish).
     this.inventoryBox.setPosition(10, 100);
     this.craftBox.setPosition(Math.max(260, this.scale.width / 2 - 160), 100);
+    this.objectiveText.setX(this.scale.width / 2);
   }
 
   private refresh(): void {
@@ -250,8 +261,21 @@ export class HudScene extends Phaser.Scene {
         (p.defeated ? '   [OFFLINE]' : ''),
     );
     this.roomText.setText(this.world.state.currentRoom.key);
+    this.objectiveText.setText(this.objectiveLine());
     if (this.inventoryOpen) this.refreshInventory();
     if (this.craftOpen) this.refreshCraft();
+  }
+
+  /** The top-centre objective line reflecting restoration progress and the current goal. */
+  private objectiveLine(): string {
+    const story = this.world.state.story;
+    const installed = story.installed.size;
+    const total = this.world.state.missions.total;
+    if (story.phase === 'finalBoss') return `SHIP RESTORED (${total}/${total}) — defeat the Station Core at the Docking Port`;
+    if (story.phase === 'departed' || story.phase === 'freeRoam') return 'Ship restored. Free roam.';
+    const next = this.world.state.missions.active()[0];
+    const goal = next ? next.objective : '';
+    return `RESTORE THE SHIP: ${installed}/${total} installed` + (goal ? `\n${goal}` : '');
   }
 
   private onGameEvent(e: GameEvent): void {

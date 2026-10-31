@@ -139,6 +139,41 @@ export const COMBAT_THEME: Track = {
   drums: { gain: 0.38, pattern: fourBars(DRUM_BAR_COMBAT) },
 };
 
+/** A heavy, slower-but-pounding boss theme: bass-forward, insistent drums, menacing lead. */
+export const BOSS_THEME: Track = {
+  bpm: 100,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.6, pattern: BASS },
+    { voice: 'pulse', gain: 0.22, pattern: ARP },
+    { voice: 'pulse', gain: 0.3, pattern: LEAD },
+  ],
+  drums: { gain: 0.45, pattern: fourBars(DRUM_BAR_COMBAT) },
+};
+
+/** The final-boss theme: fast and relentless, the busiest mix. */
+export const MAJOR_BOSS_THEME: Track = {
+  bpm: 168,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.6, pattern: BASS },
+    { voice: 'pulse', gain: 0.26, pattern: ARP },
+    { voice: 'pulse', gain: 0.34, pattern: LEAD },
+  ],
+  drums: { gain: 0.5, pattern: fourBars(DRUM_BAR_COMBAT) },
+};
+
+/** A calm, sparse title theme for the pick-your-bot screen. */
+export const TITLE_THEME: Track = {
+  bpm: 96,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.4, pattern: BASS },
+    { voice: 'pulse', gain: 0.22, pattern: LEAD },
+  ],
+  drums: { gain: 0.12, pattern: fourBars(DRUM_BAR) },
+};
+
 /** Steps in the longest line of a track (its loop length). */
 function trackSteps(track: Track): number {
   const channelMax = Math.max(...track.channels.map((c) => c.pattern.reduce((s, p) => s + p.steps, 0)));

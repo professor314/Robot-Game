@@ -21,6 +21,28 @@ export type GameEvent =
   | { type: 'lootDropped'; itemId: string; roomKey: string }
   | { type: 'recipeLearned'; recipeId: string; name: string }
   | { type: 'crafted'; recipeId: string; name: string }
+  // v3 — story / missions
+  | { type: 'storyAdvanced'; phase: string }
+  | { type: 'missionUpdated'; missionId: string; status: 'active' | 'complete' }
+  | { type: 'componentRecovered'; componentId: string; name: string }
+  | { type: 'componentInstalled'; componentId: string; installed: number; total: number }
+  | { type: 'gameWon' }
+  // v3 — keys / doors
+  | { type: 'doorLocked'; roomKey: string; requiredKey: string }
+  | { type: 'doorUnlocked'; roomKey: string }
+  | { type: 'keyFound'; keyId: string; name: string }
+  // v3 — combat depth
+  | { type: 'dashed'; entityId: string; x: number; y: number }
+  | { type: 'rangedFired'; fromX: number; fromY: number; toX: number; toY: number; hitId: string | null }
+  | { type: 'telegraph'; entityId: string; windupMs: number }
+  | { type: 'knockback'; entityId: string; x: number; y: number }
+  // v3 — bosses
+  | { type: 'bossEngaged'; bossId: string; major: boolean }
+  | { type: 'bossDefeated'; bossId: string; major: boolean }
+  // v3 — economy / logs
+  | { type: 'purchased'; goodId: string; name: string; credits: number }
+  | { type: 'logRead'; logId: string }
+  | { type: 'maxIntegrityRaised'; amount: number; maxIntegrity: number }
   | { type: 'log'; message: string; tone?: 'info' | 'good' | 'bad' };
 
 /** A listener for game events. */

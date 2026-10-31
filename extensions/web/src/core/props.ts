@@ -56,6 +56,8 @@ export type ItemKind =
   | 'weaponUpgrade' // auto-installing weapon module
   | 'miningLaser' // equippable mining tool (needed to mine junk)
   | 'recipe' // a crafting-recipe data chip (unlocks a recipe on pickup)
+  | 'keycard' // a key card (unlocks all doors into one room)
+  | 'component' // a ship component dropped by a guardian boss
   | 'loot'; // dropped by a defeated enemy
 
 /**
@@ -117,6 +119,10 @@ export interface Item {
   collected: boolean;
   /** For `recipe` items: the id of the recipe this chip unlocks. */
   recipeId?: string;
+  /** For `keycard` items: the key id it grants. */
+  keyId?: string;
+  /** For `component` items: the ship-component/mission id it belongs to. */
+  componentId?: string;
 }
 
 /** Props that block movement (the player and hostiles route around them). */
