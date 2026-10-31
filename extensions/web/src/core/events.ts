@@ -15,7 +15,13 @@ export type GameEvent =
   | { type: 'reward'; xp: number; credits: number; salvage: string[] }
   | { type: 'leveledUp'; level: number }
   | { type: 'pickedUp'; itemId: string }
-  | { type: 'log'; message: string };
+  | { type: 'mined'; roomKey: string; x: number; y: number; resource: string; amount: number }
+  | { type: 'healed'; amount: number; integrity: number }
+  | { type: 'weaponUpgraded'; name: string; weaponLevel: number; processing: number }
+  | { type: 'lootDropped'; itemId: string; roomKey: string }
+  | { type: 'recipeLearned'; recipeId: string; name: string }
+  | { type: 'crafted'; recipeId: string; name: string }
+  | { type: 'log'; message: string; tone?: 'info' | 'good' | 'bad' };
 
 /** A listener for game events. */
 export type GameEventListener = (event: GameEvent) => void;

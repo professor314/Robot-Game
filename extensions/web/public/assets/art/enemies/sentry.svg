@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" aria-hidden="true" role="img"><defs><filter id="e1-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="e1-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <line x1="150" y1="42" x2="150" y2="18" stroke="#ff5555" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="150" cy="13" r="6" fill="#ff5555" filter="url(#e1-glow)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.8s" repeatCount="indefinite"/></circle>
+  <rect x="108" y="42" width="84" height="54" rx="4" fill="url(#e1-b)" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="150" cy="68" r="20" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="150" cy="68" r="13" fill="#ff5555" filter="url(#e1-glow)" opacity="0.9"/>
+  <circle cx="150" cy="68" r="5" fill="#0d0d1a"/>
+  <rect x="80" y="100" width="140" height="95" rx="8" fill="url(#e1-b)" stroke="#ff5555" stroke-width="2"/>
+  <rect x="100" y="115" width="100" height="40" rx="4" fill="#0d0d1a" stroke="#ffb86c" stroke-width="1.5"/>
+  <rect x="106" y="122" width="14" height="26" fill="#ff5555" opacity="0.5"/>
+  <rect x="124" y="122" width="14" height="26" fill="#ffb86c" opacity="0.5"/>
+  <rect x="142" y="122" width="14" height="26" fill="#ff5555" opacity="0.5"/>
+  <circle cx="175" cy="135" r="6" fill="#ff5555" filter="url(#e1-glow)"/>
+  <!-- hazard stripes -->
+  <path d="M90,170 l20,0 l-10,18 l-20,0 z" fill="#ffb86c" opacity="0.6"/>
+  <path d="M120,170 l20,0 l-10,18 l-20,0 z" fill="#ffb86c" opacity="0.6"/>
+  <!-- turret arms -->
+  <rect x="48" y="120" width="34" height="16" rx="4" fill="#bd93f9" stroke="#ff5555" stroke-width="1"/>
+  <rect x="40" y="128" width="16" height="12" rx="2" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <rect x="218" y="120" width="34" height="16" rx="4" fill="#bd93f9" stroke="#ff5555" stroke-width="1"/>
+  <rect x="244" y="128" width="16" height="12" rx="2" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <rect x="110" y="200" width="30" height="55" rx="5" fill="url(#e1-b)" stroke="#ff5555" stroke-width="1"/>
+  <rect x="160" y="200" width="30" height="55" rx="5" fill="url(#e1-b)" stroke="#ff5555" stroke-width="1"/>
+  <rect x="102" y="250" width="44" height="16" rx="5" fill="#bd93f9"/>
+  <rect x="154" y="250" width="44" height="16" rx="5" fill="#bd93f9"/>
+</svg>

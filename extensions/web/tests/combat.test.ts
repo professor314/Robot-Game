@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ATTACK_COOLDOWN_MS, CombatSystem } from '../src/core/combat';
 import { Entity, EntityKind } from '../src/core/entity';
 import { EventBus, GameEvent } from '../src/core/events';
+import { Rng } from '../src/core/rng';
 
 function makeEntity(overrides: Partial<Entity> = {}): Entity {
   return {
@@ -67,5 +68,21 @@ describe('CombatSystem', () => {
     expect(b.defeated).toBe(true);
     expect(b.stats.integrity).toBe(0);
     expect(events.map((e) => e.type)).toEqual(['attacked', 'defeated']);
+  });
+
+  it('applies bell-curve damage variance when given an RNG (not a flat value)', () => {
+    const combat = new CombatSystem(new EventBus(), ATTACK_COOLDOWN_MS, new Rng(123));
+    const base = 10; // processing 10 - shielding 0
+    const seen = new Set<number>();
+    for (let i = 0; i < 60; i++) {
+      const a = makeEntity({ id: 'a', stats: { integrity: 10, maxIntegrity: 10, processing: 10, shielding: 0 } });
+      const b = makeEntity({ id: 'b', x: 1, stats: { integrity: 999, maxIntegrity: 999, processing: 0, shielding: 0 } });
+      seen.add(combat.resolveAttack(a, b).damage);
+    }
+    // Variance means more than one damage value shows up, clustered around the base.
+    expect(seen.size).toBeGreaterThan(1);
+    const values = [...seen];
+    expect(Math.min(...values)).toBeGreaterThanOrEqual(1);
+    expect(Math.max(...values)).toBeLessThanOrEqual(Math.ceil(base * 1.4));
   });
 });

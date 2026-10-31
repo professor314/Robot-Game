@@ -2,7 +2,9 @@ import './style.css';
 import Phaser from 'phaser';
 import { installDebugAgentHook } from './agent/debugHook';
 import { BootScene } from './render/BootScene';
+import { GameOverScene } from './render/GameOverScene';
 import { HudScene } from './render/HudScene';
+import { SelectBotScene } from './render/SelectBotScene';
 import { WORLD_SCENE, WorldScene } from './render/WorldScene';
 
 /**
@@ -19,10 +21,12 @@ const config: Phaser.Types.Core.GameConfig = {
   height: 600,
   pixelArt: true,
   scale: {
-    mode: Phaser.Scale.FIT,
+    // RESIZE fills the window; the WorldScene camera zooms to keep a full room in view, and
+    // the HUD repositions on resize, so the whole room is always visible at any window size.
+    mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, WorldScene, HudScene],
+  scene: [BootScene, SelectBotScene, WorldScene, HudScene, GameOverScene],
 };
 
 const game = new Phaser.Game(config);

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="hs-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="10" y="8" width="44" height="48" rx="5" fill="#16161f" stroke="#50fa7b" stroke-width="2"/>
+  <rect x="16" y="14" width="32" height="24" rx="3" fill="#0d0d1a" stroke="#50fa7b" stroke-width="1"/>
+  <rect x="28" y="18" width="8" height="16" fill="#50fa7b" filter="url(#hs-glow)"/>
+  <rect x="24" y="24" width="16" height="4" fill="#50fa7b" filter="url(#hs-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1.4s" repeatCount="indefinite"/></rect>
+  <circle cx="22" cy="46" r="3" fill="#ff92d0"/>
+  <circle cx="42" cy="46" r="3" fill="#ffb86c"/>
+</svg>

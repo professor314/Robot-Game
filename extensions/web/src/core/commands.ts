@@ -10,6 +10,8 @@ export type Command =
   | { type: 'attack' }
   | { type: 'useSkill'; skillId: string }
   | { type: 'pickup' }
+  | { type: 'interact' }
+  | { type: 'craft'; recipeId: string }
   | { type: 'wait' };
 
 /** Convenience constructors. */
@@ -18,5 +20,7 @@ export const Commands = {
   attack: (): Command => ({ type: 'attack' }),
   useSkill: (skillId: string): Command => ({ type: 'useSkill', skillId }),
   pickup: (): Command => ({ type: 'pickup' }),
+  interact: (): Command => ({ type: 'interact' }),
+  craft: (recipeId: string): Command => ({ type: 'craft', recipeId }),
   wait: (): Command => ({ type: 'wait' }),
 };

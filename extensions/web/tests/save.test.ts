@@ -26,6 +26,7 @@ describe('save/load round-trip', () => {
     for (let i = 0; i < ROOM_HEIGHT; i++) world.apply(Commands.move('north'));
     world.progression.addXp(120);
     world.progression.addCredits(45);
+    const savedCredits = world.progression.credits; // may include auto-pickup credits
     const json = serializeToJson(world);
 
     // Mutate further, then load the snapshot back.
@@ -34,7 +35,7 @@ describe('save/load round-trip', () => {
     deserializeFromJson(world, json);
 
     expect(world.player.roomKey).toBe('Repair Bay');
-    expect(world.progression.credits).toBe(45);
+    expect(world.progression.credits).toBe(savedCredits);
     expect(world.progression.totalXp).toBe(120);
     expect(world.graph.rooms.get('Repair Bay')!.visited).toBe(true);
   });

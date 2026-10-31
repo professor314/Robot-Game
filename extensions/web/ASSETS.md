@@ -6,29 +6,35 @@ sprites, ripped music/MIDI/NSF) is shipped.
 
 ## Art / Tiles
 
-### Tileset in use: Kenney "Sci-Fi RTS" (CC0)
-- Source: https://kenney.nl/assets/sci-fi-rts
-- License: Creative Commons CC0 1.0 Universal (public domain, no attribution required)
-- Status: **in use.** The pack is unzipped under `public/assets/kenney/`. The game loads the
-  XML sprite atlas `Spritesheet/scifiRTS_spritesheet.png` + `.xml` via Phaser `load.atlasXML`
-  in `src/render/BootScene.ts`. The pack's own `License.txt` is kept alongside the art.
-- Frame mapping: `src/render/textures.ts` (`KenneyFrame`) maps each render role to an atlas
-  frame — floor/wall/door use `scifiTile_*` frames (wall and door are tinted in
-  `WorldScene.tintForTile` so the three read distinctly from the same terrain set); the player
-  and the three hostiles use distinct `scifiUnit_*` vehicle frames. 64px art is scaled to the
-  32px grid at draw time.
+### Custom "neon robot" art (original, in use)
+All in-game art is **original**, authored for this project in the imadestuff.com neon-on-dark
+robot style (palette: pink `#ff92d0`, blue `#8be9fd`, purple `#bd93f9`, green `#50fa7b`,
+orange `#ffb86c`, dark `#0d0d1a`; see `art-library/ROBOT-CREATION-GUIDE.md` in the blog repo).
+It carries no third-party license restriction.
+
+- **Location:** `public/assets/art/` as individual SVGs, loaded via Phaser `load.svg` in
+  `src/render/textures.ts` (`loadArt`). SVGs rasterize crisply at the requested size.
+- **Player bots** (`art/players/`): four chassis — `dome`, `spindle`, `tread`, `barrel` —
+  copied from the blog's robot SVG library (the same robots used across imadestuff.com).
+  Shown on the pick-your-bot screen (`SelectBotScene`).
+- **Enemies** (`art/enemies/`): five original hostile bots — `sentry`, `drone`, `program`,
+  `crawler`, `hunter` — in an aggressive red/orange variant of the palette.
+- **Tiles** (`art/tiles/`): 3 floors, 4 walls, 3 doors. Each room picks one floor/wall/door
+  style deterministically (walls are uniform within a room). 64×64 SVGs.
+- **Mineable junk** (`art/junk/`): 10 variants — scrap, circuit, cell, crystal, hull, bolts,
+  gear, ore, plating, canister.
+- **Items** (`art/items/`): mining laser, weapon upgrade, loot, heal station, recipe chip.
+- **Themed props** (`art/props/`): room-signature furniture (control stations, telescopes,
+  viewports, server racks, reactor cores, bunks, docking clamps, comms antennas, cargo stacks)
+  plus generic crate/console/tank/pipe art.
+- **Regenerating:** the enemies, tiles, junk, and items are produced by
+  `scripts/make_art.py` (run with Python; edit it to tweak the art). Player bots are copied
+  from the blog's `robots/` partials.
 
 ### Placeholder art (generated fallback)
-If the Kenney atlas fails to load, the game falls back to original tiles/sprites generated at
-runtime in `src/render/textures.ts` via Phaser `Graphics.generateTexture` (plain colored 32×32
-shapes for floor/wall/door/player/hostile). These placeholders are original and carry no
-license restriction, keeping the game playable with no art files present.
-
-#### Swapping in different art
-1. Drop the new CC0 pack under `public/assets/kenney/` (or a sibling folder).
-2. Point `loadKenneyAtlas` in `src/render/textures.ts` at the new sheet/atlas.
-3. Update the `KenneyFrame` role→frame map (and tints) to the new frame names.
-4. Record any additional packs used here.
+If an SVG fails to load, the game falls back to tiny original shapes generated at runtime in
+`src/render/textures.ts` via Phaser `Graphics.generateTexture`, keeping the game playable with
+no art files present.
 
 ## Audio
 - Chiptune music and SFX are **generated at runtime** via the Web Audio API in `src/audio/`

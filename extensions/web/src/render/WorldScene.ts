@@ -9,11 +9,18 @@ import { AudioManager } from '../audio/AudioManager';
 import { Persistence } from './persistence';
 import { gameFeel, toggleGameFeel } from './settings';
 import {
-  KENNEY_ATLAS,
-  KenneyFrame,
+  EnemyArt,
   TILE,
   TextureKey,
-  kenneyAtlasReady,
+  artReady,
+  texDoor,
+  texEnemy,
+  texFloor,
+  texItem,
+  texJunk,
+  texPlayer,
+  texProp,
+  texWall,
 } from './textures';
 
 /** Scene key for the world scene. */
@@ -25,9 +32,6 @@ const ROOM_PX_W = ROOM_WIDTH * TILE;
 const ROOM_PX_H = ROOM_HEIGHT * TILE;
 const ROOM_STRIDE_X = ROOM_PX_W + ROOM_GAP;
 const ROOM_STRIDE_Y = ROOM_PX_H + ROOM_GAP;
-
-/** How long the camera takes to pan when entering a new room. */
-const PAN_MS = 350;
 
 /** Keyboard direction mapping. */
 const KEY_DIR: Record<string, Direction> = {
@@ -59,22 +63,37 @@ export class WorldScene extends Phaser.Scene {
   private readonly roomLayers = new Map<string, Phaser.GameObjects.Container>();
   /** Hostile sprite per entity id. */
   private readonly hostileSprites = new Map<string, Phaser.GameObjects.Image>();
+  /** Item sprite per item id (hidden when collected). */
+  private readonly itemSprites = new Map<string, Phaser.GameObjects.Image>();
+  /** Prop sprite keyed by "roomKey:x,y" so interactive props (ore) can be removed on mine. */
+  private readonly propSprites = new Map<string, Phaser.GameObjects.Image>();
+  /** Room container per room key, so runtime-dropped loot can be added to the right layer. */
   private offsetX = 0;
   private offsetY = 0;
-  /** Whether to render with the Kenney atlas (vs. placeholder textures). */
-  private useAtlas = false;
+  /** Whether SVG art is available (vs. placeholder textures). */
+  private useArt = false;
   private readonly audio = new AudioManager();
   private audioStarted = false;
+  /** True once the player is defeated; freezes the world until a restart. */
+  private gameOver = false;
+  /** Chosen bot id and whether to resume a save, passed in from the select screen. */
+  private botId = 'dome';
+  private resume = false;
 
   constructor() {
     super(WORLD_SCENE);
   }
 
+  init(data: { botId?: string; resume?: boolean }): void {
+    this.botId = data.botId ?? this.botId;
+    this.resume = data.resume ?? false;
+  }
+
   create(): void {
-    this.state = new WorldState();
-    // Resume a prior session if one is stored (corrupt/incompatible saves are ignored).
-    if (Persistence.hasSave()) Persistence.load(this.state);
-    this.useAtlas = kenneyAtlasReady(this);
+    this.state = new WorldState({ botId: this.botId });
+    // Resume a prior session only when asked (Continue from the select screen / reload).
+    if (this.resume && Persistence.hasSave()) Persistence.load(this.state);
+    this.useArt = artReady(this);
 
     // Normalize layout coords to non-negative so everything fits in world space.
     let minGX = Infinity;
@@ -92,22 +111,74 @@ export class WorldScene extends Phaser.Scene {
 
     this.state.events.on((e) => this.onGameEvent(e));
     this.bindInput();
-    this.centerCameraOnPlayer(false);
 
-    const bounds = this.worldBounds();
-    this.cameras.main.setBounds(0, 0, bounds.w, bounds.h);
     this.cameras.main.setBackgroundColor('#06070d');
+    // Continuously follow the player so they stay centered — including in edge rooms (the
+    // padded bounds below let the camera scroll past the world edge). The lerp gives a smooth
+    // glide on room transitions without the one-shot-pan getting stuck.
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    this.fitCamera();
+
+    // Re-fit the camera whenever the window (and thus the canvas) resizes.
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.fitCamera, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.fitCamera, this);
+    });
 
     // Launch the HUD as an overlay scene, handing it this scene so it can read Core state.
     this.scene.launch('Hud', { world: this });
   }
 
+  /**
+   * Zoom the camera so a full room (plus a margin for the doorway gaps and HUD) always fits the
+   * current viewport, at any window size. This is what guarantees you can see the whole room
+   * even on a small window.
+   */
+  private fitCamera(): void {
+    const cam = this.cameras.main;
+    // Target view: one room plus a tile of margin on each side, and headroom for the HUD.
+    const viewW = ROOM_PX_W + ROOM_GAP * 2;
+    const viewH = ROOM_PX_H + ROOM_GAP * 2 + 48;
+    const zoom = Math.min(cam.width / viewW, cam.height / viewH);
+    cam.setZoom(Math.max(0.25, zoom));
+
+    // Pad the camera bounds by half a viewport (in world units) on every side. Without this,
+    // Phaser clamps the scroll to the world rectangle, so the player can't be centered in an
+    // edge room and gets stuck against the screen edge. The padding lets the camera scroll
+    // past the world edge far enough to always center the player.
+    const world = this.worldBounds();
+    const padX = cam.width / cam.zoom / 2;
+    const padY = cam.height / cam.zoom / 2;
+    cam.setBounds(-padX, -padY, world.w + padX * 2, world.h + padY * 2);
+  }
+
   /** Phaser render loop: advance the deterministic Core clock and sync hostile sprites. */
   update(_time: number, delta: number): void {
+    if (this.gameOver) return;
     this.state.tick(delta);
     this.syncHostiles();
     // Swap to combat music when a live hostile shares the player's room.
     this.audio.setContext(this.state.hostilesInCurrentRoom().length > 0 ? 'combat' : 'exploration');
+  }
+
+  /** Freeze the world and show the GAME OVER overlay with a restart option. */
+  private showGameOver(): void {
+    if (this.gameOver) return;
+    this.gameOver = true;
+    this.audio.setContext('exploration');
+    this.scene.launch('GameOver', {
+      level: this.state.progression.level,
+      credits: this.state.progression.credits,
+      onRestart: () => this.restartGame(),
+    });
+  }
+
+  /** Full reset: clear the save and return to the pick-your-bot screen. */
+  private restartGame(): void {
+    Persistence.clear();
+    this.gameOver = false;
+    this.scene.stop('Hud');
+    this.scene.start('SelectBot');
   }
 
   /** Pixel origin of a room given its grid coordinates. */
@@ -128,73 +199,57 @@ export class WorldScene extends Phaser.Scene {
     return { w: (maxGX + 1) * ROOM_STRIDE_X, h: (maxGY + 1) * ROOM_STRIDE_Y };
   }
 
-  /** Resolve the placeholder texture key for a tile kind. */
-  private placeholderForTile(kind: TileKind): string | null {
-    switch (kind) {
-      case TileKind.Floor:
-        return TextureKey.Floor;
-      case TileKind.Wall:
-        return TextureKey.Wall;
-      case TileKind.Door:
-        return TextureKey.Door;
-      default:
-        return null;
-    }
-  }
-
-  /** Resolve the Kenney atlas frame for a tile kind. */
-  private atlasFrameForTile(kind: TileKind): string | null {
-    switch (kind) {
-      case TileKind.Floor:
-        return KenneyFrame.Floor;
-      case TileKind.Wall:
-        return KenneyFrame.Wall;
-      case TileKind.Door:
-        return KenneyFrame.Door;
-      default:
-        return null;
-    }
-  }
-
   /**
-   * Create an image for a cell, using the Kenney atlas frame when available (scaled so its
-   * larger native art fits the TILE grid) and falling back to the placeholder texture. `fit`
-   * is the target size in pixels (full tile for terrain, slightly smaller for units); `tint`
-   * optionally shades the frame so floor/wall/door read distinctly from the same tileset.
+   * Place an SVG texture at a tile, scaled to `fit` pixels, falling back to a placeholder key
+   * if the art isn't loaded. SVGs are rasterized larger than a tile, so we always rescale.
    */
-  private makeSprite(
-    x: number,
-    y: number,
-    atlasFrame: string | null,
-    placeholderKey: string,
-    fit: number,
-    tint?: number,
-  ): Phaser.GameObjects.Image {
-    let img: Phaser.GameObjects.Image;
-    if (this.useAtlas && atlasFrame && this.textures.get(KENNEY_ATLAS).has(atlasFrame)) {
-      img = this.add.image(x, y, KENNEY_ATLAS, atlasFrame);
-      const native = Math.max(img.width, img.height) || fit;
-      img.setScale(fit / native);
-      if (tint !== undefined) img.setTint(tint);
-    } else {
-      img = this.add.image(x, y, placeholderKey);
-    }
+  private place(x: number, y: number, texKey: string, fallback: string, fit: number): Phaser.GameObjects.Image {
+    const key = this.useArt && this.textures.exists(texKey) ? texKey : fallback;
+    const img = this.add.image(x, y, key);
+    const native = Math.max(img.width, img.height) || fit;
+    img.setScale(fit / native);
     return img;
   }
 
-  /** Tint applied to a tile kind when rendering from the atlas (undefined = no tint). */
-  private tintForTile(kind: TileKind): number | undefined {
+  /** Texture key for a tile kind, honoring this room's chosen floor/wall/door style. */
+  private tileTexture(room: Room, kind: TileKind): string | null {
     switch (kind) {
+      case TileKind.Floor:
+        return texFloor(room.floorStyle);
       case TileKind.Wall:
-        return 0x5a6072; // shade walls cool/dark so they read as structure
+        return texWall(room.wallStyle);
       case TileKind.Door:
-        return 0x7fe0d6; // brighten doors
+        return texDoor(room.doorStyle);
       default:
-        return undefined;
+        return null;
     }
   }
 
-  /** Build a container of tile images for every room, visibility driven by fog of war. */
+  private placeholderForTile(kind: TileKind): string {
+    if (kind === TileKind.Wall) return TextureKey.Wall;
+    if (kind === TileKind.Door) return TextureKey.Door;
+    return TextureKey.Floor;
+  }
+
+  /** Texture key for a prop; ore deposits use their junk-variant art, themed props their own. */
+  private propTexture(kind: string, junk?: string): string {
+    if (kind === 'ore') return texJunk(junk ?? 'ore');
+    if (kind === 'healStation') return texItem('healStation');
+    if (this.textures.exists(texProp(kind))) return texProp(kind);
+    if (kind === 'debris') return texJunk('hull');
+    return texProp('crate');
+  }
+
+  /** Texture key for an item kind. */
+  private itemTexture(kind: string): string {
+    if (kind === 'miningLaser' || kind === 'weaponUpgrade' || kind === 'loot' || kind === 'recipe') {
+      return texItem(kind);
+    }
+    // Salvage resource items reuse the matching junk art.
+    return texJunk(kind === 'component' ? 'circuit' : kind === 'scrap' ? 'scrap' : kind === 'cell' ? 'cell' : 'crystal');
+  }
+
+  /** Build a container of tile images, props, and items for every room; fog hides it until visited. */
   private drawRooms(): void {
     for (const room of this.state.graph.rooms.values()) {
       const { ox, oy } = this.roomOrigin(room);
@@ -202,53 +257,86 @@ export class WorldScene extends Phaser.Scene {
       for (let x = 0; x < ROOM_WIDTH; x++) {
         for (let y = 0; y < ROOM_HEIGHT; y++) {
           const kind = room.tiles[x][y];
-          const placeholder = this.placeholderForTile(kind);
-          if (!placeholder) continue;
-          const img = this.makeSprite(
-            x * TILE + TILE / 2,
-            y * TILE + TILE / 2,
-            this.atlasFrameForTile(kind),
-            placeholder,
-            TILE,
-            this.tintForTile(kind),
-          );
+          const tex = this.tileTexture(room, kind);
+          if (!tex) continue;
+          const img = this.place(x * TILE + TILE / 2, y * TILE + TILE / 2, tex, this.placeholderForTile(kind), TILE);
           container.add(img);
         }
       }
+
+      // Props: decorative/structural + mineable junk. Registered by position so interactive
+      // props (ore/junk deposits) can be removed from the scene when mined.
+      for (const prop of room.props) {
+        const img = this.place(
+          prop.x * TILE + TILE / 2,
+          prop.y * TILE + TILE / 2,
+          this.propTexture(prop.kind, prop.junk),
+          TextureKey.Wall,
+          TILE * 0.95,
+        );
+        img.setDepth(2);
+        container.add(img);
+        this.propSprites.set(`${room.key}:${prop.x},${prop.y}`, img);
+      }
+
+      // Items: interactive pickups, tracked so they can be hidden on pickup.
+      for (const item of room.items) {
+        const img = this.place(
+          item.x * TILE + TILE / 2,
+          item.y * TILE + TILE / 2,
+          this.itemTexture(item.kind),
+          TextureKey.Door,
+          TILE * 0.75,
+        );
+        img.setDepth(3).setVisible(!item.collected);
+        container.add(img);
+        this.itemSprites.set(item.id, img);
+      }
+
       container.setVisible(room.visited);
       this.roomLayers.set(room.key, container);
     }
   }
 
+  /** Enemy art for an entity: patrols use one type; named hostiles map to distinct types. */
+  private enemyArt(entityId: string): EnemyArt {
+    if (entityId.startsWith('patrol:')) return 'crawler';
+    const idx = this.state.hostiles
+      .filter((h) => !h.id.startsWith('patrol:'))
+      .findIndex((h) => h.id === entityId);
+    // Named hostiles cycle through sentry/drone/program/hunter (skip crawler = patrol art).
+    const named: EnemyArt[] = ['sentry', 'drone', 'program', 'hunter'];
+    return named[Math.max(0, idx) % named.length];
+  }
+
   private drawHostiles(): void {
-    this.state.hostiles.forEach((h, i) => {
+    for (const h of this.state.hostiles) {
       const room = this.state.graph.rooms.get(h.roomKey);
-      if (!room) return;
+      if (!room) continue;
       const { ox, oy } = this.roomOrigin(room);
-      const frame = KenneyFrame.Hostiles[i % KenneyFrame.Hostiles.length];
-      const sprite = this.makeSprite(
+      const sprite = this.place(
         ox + h.x * TILE + TILE / 2,
         oy + h.y * TILE + TILE / 2,
-        frame,
+        texEnemy(this.enemyArt(h.id)),
         TextureKey.Hostile,
-        TILE * 0.9,
+        TILE * 1.15,
       )
         .setVisible(room.visited)
         .setDepth(8);
       this.hostileSprites.set(h.id, sprite);
-    });
+    }
   }
 
   private drawPlayer(): void {
     const p = this.state.player;
     const room = this.state.currentRoom;
     const { ox, oy } = this.roomOrigin(room);
-    this.player = this.makeSprite(
+    this.player = this.place(
       ox + p.x * TILE + TILE / 2,
       oy + p.y * TILE + TILE / 2,
-      KenneyFrame.Player,
+      texPlayer(this.state.botId),
       TextureKey.Player,
-      TILE * 0.9,
+      TILE * 1.2,
     ).setDepth(10);
   }
 
@@ -287,6 +375,11 @@ export class WorldScene extends Phaser.Scene {
         this.loadSave();
         return;
       }
+      if (ev.code === 'KeyE') {
+        ev.preventDefault();
+        this.state.apply(Commands.interact());
+        return;
+      }
       const dir = KEY_DIR[ev.code];
       if (!dir) return;
       ev.preventDefault();
@@ -311,7 +404,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.syncPlayerSprite();
     this.syncHostiles();
-    this.centerCameraOnPlayer(false);
+    this.cameras.main.centerOn(this.player.x, this.player.y);
     this.state.events.emit({ type: 'log', message: 'Game loaded' });
   }
 
@@ -340,14 +433,11 @@ export class WorldScene extends Phaser.Scene {
         this.revealRoom(e.roomKey);
         break;
       case 'roomChanged':
-        this.panToPlayer();
+        // Camera follow (set up in create) smoothly glides to the player's new room.
         break;
       case 'attacked':
         this.playHitFeedback(e.targetId, e.damage);
         this.audio.sfx(e.targetId === this.state.player.id ? 'damage' : 'hit');
-        break;
-      case 'defeated':
-        this.audio.sfx('defeat');
         break;
       case 'reward':
         this.audio.sfx('pickup');
@@ -355,9 +445,61 @@ export class WorldScene extends Phaser.Scene {
       case 'leveledUp':
         this.audio.sfx('levelup');
         break;
+      case 'pickedUp':
+        this.itemSprites.get(e.itemId)?.setVisible(false);
+        this.audio.sfx('pickup');
+        break;
+      case 'mined':
+        this.onMined(e.roomKey, e.x, e.y);
+        break;
+      case 'healed':
+        this.audio.sfx('levelup');
+        this.floatText(this.player, `+${e.amount}`, '#5affa0', 22);
+        break;
+      case 'weaponUpgraded':
+        this.audio.sfx('levelup');
+        this.floatText(this.player, 'WEAPON +', '#8be0ff', 20);
+        break;
+      case 'lootDropped':
+        this.spawnItemSprite(e.roomKey, e.itemId);
+        break;
+      case 'defeated':
+        this.audio.sfx('defeat');
+        if (e.entityId === this.state.player.id) this.showGameOver();
+        break;
       default:
         break;
     }
+  }
+
+  /** Remove a mined ore prop's sprite from the scene. */
+  private onMined(roomKey: string, x: number, y: number): void {
+    const key = `${roomKey}:${x},${y}`;
+    const sprite = this.propSprites.get(key);
+    if (sprite) {
+      sprite.destroy();
+      this.propSprites.delete(key);
+    }
+    this.audio.sfx('pickup');
+  }
+
+  /** Spawn a sprite for an item that appeared at runtime (e.g. loot dropped by an enemy). */
+  private spawnItemSprite(roomKey: string, itemId: string): void {
+    const room = this.state.graph.rooms.get(roomKey);
+    const container = this.roomLayers.get(roomKey);
+    if (!room || !container) return;
+    const item = room.items.find((it) => it.id === itemId);
+    if (!item || this.itemSprites.has(itemId)) return;
+    const img = this.place(
+      item.x * TILE + TILE / 2,
+      item.y * TILE + TILE / 2,
+      this.itemTexture(item.kind),
+      TextureKey.Door,
+      TILE * 0.75,
+    );
+    img.setDepth(3).setVisible(!item.collected && room.visited);
+    container.add(img);
+    this.itemSprites.set(itemId, img);
   }
 
   /** Resolve the sprite for an entity id (player or a hostile). */
@@ -366,8 +508,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * Lightweight game feel on a hit: flash the struck sprite, float a damage number, and shake
-   * the camera when the player is struck. All effects respect the `gameFeel` settings toggle.
+   * Lightweight game feel on a hit: flash the struck sprite, float a big damage number, and
+   * shake the camera when the player is struck. Player damage is red; enemy damage is purple
+   * (easier to read than the old yellow). Respects the `gameFeel` settings toggle.
    */
   private playHitFeedback(targetId: string, damage: number): void {
     if (!gameFeel.enabled) return;
@@ -378,26 +521,42 @@ export class WorldScene extends Phaser.Scene {
     sprite.setTintFill(0xffffff);
     this.time.delayedCall(90, () => sprite.clearTint());
 
-    // Floating damage number.
-    const dmg = this.add
-      .text(sprite.x, sprite.y - TILE / 2, `-${damage}`, {
+    const isPlayer = targetId === this.state.player.id;
+    this.floatText(sprite, `-${damage}`, isPlayer ? '#ff6b6b' : '#c77dff', 26);
+
+    // Screen shake only when the player takes damage.
+    if (isPlayer) this.cameras.main.shake(120, 0.006);
+  }
+
+  /**
+   * Float a label upward above a target sprite, fading out. Used for damage numbers, heals, and
+   * weapon-upgrade cues. Numbers are large and linger ~1.8s so hits are easy to read.
+   */
+  private floatText(
+    target: Phaser.GameObjects.Image,
+    text: string,
+    color: string,
+    fontSize: number,
+  ): void {
+    const label = this.add
+      .text(target.x, target.y - TILE / 2, text, {
         fontFamily: 'monospace',
-        fontSize: '13px',
-        color: targetId === this.state.player.id ? '#ff8a8a' : '#ffe08a',
+        fontSize: `${fontSize}px`,
+        color,
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4,
       })
       .setOrigin(0.5)
       .setDepth(20);
     this.tweens.add({
-      targets: dmg,
-      y: dmg.y - 18,
+      targets: label,
+      y: label.y - 34,
       alpha: 0,
-      duration: 600,
+      duration: 1800,
       ease: 'Quad.easeOut',
-      onComplete: () => dmg.destroy(),
+      onComplete: () => label.destroy(),
     });
-
-    // Screen shake only when the player takes damage.
-    if (targetId === this.state.player.id) this.cameras.main.shake(120, 0.006);
   }
 
   /** Reposition the player sprite to its current room/tile. */
@@ -416,16 +575,4 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private centerCameraOnPlayer(animate: boolean): void {
-    if (animate) {
-      this.panToPlayer();
-    } else {
-      this.cameras.main.centerOn(this.player.x, this.player.y);
-    }
-  }
-
-  /** Pan the camera smoothly to center the player (used on room change). */
-  private panToPlayer(): void {
-    this.cameras.main.pan(this.player.x, this.player.y, PAN_MS, 'Sine.easeInOut');
-  }
 }

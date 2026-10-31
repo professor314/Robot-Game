@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="pcs-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="10" y="30" width="44" height="22" rx="3" fill="#1b2740" stroke="#8be9fd" stroke-width="2"/>
+  <rect x="14" y="14" width="36" height="18" rx="2" fill="#0d0d1a" stroke="#50fa7b" stroke-width="1.5"/>
+  <line x1="18" y1="20" x2="46" y2="20" stroke="#50fa7b" stroke-width="1" opacity="0.6"/>
+  <line x1="18" y1="25" x2="38" y2="25" stroke="#50fa7b" stroke-width="1" opacity="0.5"/>
+  <circle cx="18" cy="42" r="3" fill="#ff92d0" filter="url(#pcs-glow)"/>
+  <circle cx="28" cy="42" r="3" fill="#50fa7b" filter="url(#pcs-glow)"/>
+  <circle cx="38" cy="42" r="3" fill="#ffb86c"/>
+  <rect x="42" y="39" width="8" height="6" rx="1" fill="#bd93f9"/></svg>

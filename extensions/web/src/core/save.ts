@@ -1,9 +1,10 @@
 import { Entity, Facing } from './entity';
 import { Progression } from './progression';
+import { Item, Prop, propBlocks } from './props';
 import { WorldState } from './state';
 
 /** Current save schema version. Bump when the shape changes incompatibly. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 5;
 
 /** Serialized stats. */
 interface StatsSnapshot {
@@ -26,24 +27,39 @@ interface EntitySnapshot {
   defeated: boolean;
 }
 
-/** Serialized progression. */
+/** Serialized progression, including the general inventory and weapon tier. */
 interface ProgressionSnapshot {
   totalXp: number;
   level: number;
   credits: number;
   salvage: string[];
   chassisEquipped: boolean;
+  weaponLevel: number;
+  miningLevel: number;
+  knownRecipes: string[];
+  inventory: [string, number][];
   skills: { id: string; remainingMs: number }[];
   professions: { id: string; unlocked: boolean }[];
+}
+
+/** Serialized room contents (props + items), so mining and dropped loot persist. */
+interface RoomContentSnapshot {
+  key: string;
+  props: Prop[];
+  items: Item[];
 }
 
 /** The complete, versioned, serializable game state. */
 export interface SaveData {
   version: number;
   seed: number;
+  botId: string;
+  miningLaserEquipped: boolean;
   player: EntitySnapshot;
   hostiles: EntitySnapshot[];
   visitedRooms: string[];
+  /** Full room contents (props + items) so mined ore and dropped loot survive a reload. */
+  rooms: RoomContentSnapshot[];
   progression: ProgressionSnapshot;
 }
 
@@ -82,6 +98,10 @@ function snapshotProgression(p: Progression): ProgressionSnapshot {
     credits: p.credits,
     salvage: [...p.salvage],
     chassisEquipped: p.chassisEquipped,
+    weaponLevel: p.weaponLevel,
+    miningLevel: p.miningLevel,
+    knownRecipes: [...p.knownRecipes],
+    inventory: [...p.inventory.entries()],
     skills: p.skills.map((s) => ({ id: s.id, remainingMs: s.remainingMs })),
     professions: p.professions.map((x) => ({ id: x.id, unlocked: x.unlocked })),
   };
@@ -94,6 +114,12 @@ function restoreProgression(p: Progression, snap: ProgressionSnapshot): void {
   p.salvage.length = 0;
   p.salvage.push(...snap.salvage);
   p.chassisEquipped = snap.chassisEquipped;
+  p.weaponLevel = snap.weaponLevel ?? 0;
+  p.miningLevel = snap.miningLevel ?? 0;
+  p.knownRecipes.clear();
+  for (const id of snap.knownRecipes ?? []) p.knownRecipes.add(id);
+  p.inventory.clear();
+  for (const [k, v] of snap.inventory ?? []) p.inventory.set(k, v);
   for (const s of snap.skills) {
     const skill = p.skills.find((k) => k.id === s.id);
     if (skill) skill.remainingMs = s.remainingMs;
@@ -106,12 +132,20 @@ function restoreProgression(p: Progression, snap: ProgressionSnapshot): void {
 
 /** Build a versioned snapshot of the world. Lives in Core so it works headless and serverside. */
 export function serialize(world: WorldState): SaveData {
+  const rooms: RoomContentSnapshot[] = [...world.graph.rooms.values()].map((room) => ({
+    key: room.key,
+    props: room.props.map((p) => ({ ...p })),
+    items: room.items.map((it) => ({ ...it })),
+  }));
   return {
     version: SAVE_VERSION,
     seed: world.seed,
+    botId: world.botId,
+    miningLaserEquipped: world.miningLaserEquipped,
     player: snapshotEntity(world.player),
     hostiles: world.hostiles.map(snapshotEntity),
     visitedRooms: [...world.graph.rooms.values()].filter((r) => r.visited).map((r) => r.key),
+    rooms,
     progression: snapshotProgression(world.progression),
   };
 }
@@ -133,7 +167,13 @@ function validate(data: unknown): SaveData {
   if (d.version !== SAVE_VERSION) {
     throw new SaveLoadError(`Unsupported save version: ${String(d.version)} (expected ${SAVE_VERSION}).`);
   }
-  if (!d.player || !Array.isArray(d.hostiles) || !Array.isArray(d.visitedRooms) || !d.progression) {
+  if (
+    !d.player ||
+    !Array.isArray(d.hostiles) ||
+    !Array.isArray(d.visitedRooms) ||
+    !Array.isArray(d.rooms) ||
+    !d.progression
+  ) {
     throw new SaveLoadError('Save is missing required fields.');
   }
   return d as SaveData;
@@ -146,6 +186,8 @@ function validate(data: unknown): SaveData {
 export function deserialize(world: WorldState, data: unknown): void {
   const save = validate(data);
 
+  world.miningLaserEquipped = save.miningLaserEquipped ?? false;
+
   restoreEntity(world.player, save.player);
 
   for (const snap of save.hostiles) {
@@ -155,6 +197,18 @@ export function deserialize(world: WorldState, data: unknown): void {
 
   const visited = new Set(save.visitedRooms);
   for (const room of world.graph.rooms.values()) room.visited = visited.has(room.key);
+
+  // Restore room contents (props + items), rebuilding each room's blocked-tile set so movement
+  // and mining stay consistent with the saved state.
+  const byKey = new Map(save.rooms.map((r) => [r.key, r]));
+  for (const room of world.graph.rooms.values()) {
+    const snap = byKey.get(room.key);
+    if (!snap) continue;
+    room.props = snap.props.map((p) => ({ ...p }));
+    room.items = snap.items.map((it) => ({ ...it }));
+    room.blocked.clear();
+    for (const p of room.props) if (propBlocks(p.kind)) room.blocked.add(`${p.x},${p.y}`);
+  }
 
   restoreProgression(world.progression, save.progression);
 }

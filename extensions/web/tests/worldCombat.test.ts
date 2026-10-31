@@ -52,7 +52,7 @@ describe('world combat, rewards, and respawn', () => {
     expect(hostile.roomKey).toBe(hostile.spawn.roomKey);
   });
 
-  it('respawns the player at the safe room with a penalty after defeat', () => {
+  it('leaves the player defeated on death (terminal game over, no auto-respawn)', () => {
     const world = new WorldState({ seed: 1, config: { safeRoom: 'Main Corridor', defeatPenalty: 0.25, playerRespawnDelayMs: 1000 } });
     const seed = HOSTILES[2]; // Rogue Program: high processing
     engage(world, seed.key);
@@ -60,15 +60,29 @@ describe('world combat, rewards, and respawn', () => {
     world.player.stats.integrity = 1;
     world.player.stats.shielding = 0;
 
-    // Several ticks so the hostile's AI attacks the adjacent player.
-    for (let i = 0; i < 5 && !world.player.defeated; i++) world.tick(700);
+    // Several ticks so the hostile's AI (gated to one step per interval) attacks the player.
+    const defeatEvents: GameEvent[] = [];
+    world.events.on((e) => {
+      if (e.type === 'defeated' && e.entityId === 'player') defeatEvents.push(e);
+    });
+    for (let i = 0; i < 20 && !world.player.defeated; i++) world.tick(500);
     expect(world.player.defeated).toBe(true);
+    expect(defeatEvents.length).toBeGreaterThan(0);
 
-    // Advance past the player respawn delay.
-    world.tick(1001);
+    // Player defeat is terminal: further ticks do NOT auto-respawn (the UI offers restart).
+    world.tick(5000);
+    expect(world.player.defeated).toBe(true);
+  });
+
+  it('respawnPlayerInPlace restores the player at the safe room with a penalty', () => {
+    const world = new WorldState({ seed: 1, config: { safeRoom: 'Main Corridor', defeatPenalty: 0.25, playerRespawnDelayMs: 1000 } });
+    world.player.defeated = true;
+    world.player.stats.integrity = 0;
+
+    world.respawnPlayerInPlace();
+
     expect(world.player.defeated).toBe(false);
     expect(world.player.roomKey).toBe('Main Corridor');
-    // Penalty leaves integrity below max but at least 1.
     expect(world.player.stats.integrity).toBeGreaterThanOrEqual(1);
     expect(world.player.stats.integrity).toBeLessThan(world.player.stats.maxIntegrity);
   });

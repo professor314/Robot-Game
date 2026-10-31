@@ -17,3 +17,8 @@ export enum TileKind {
 export function isWalkable(kind: TileKind): boolean {
   return kind === TileKind.Floor || kind === TileKind.Door;
 }
+
+/** Number of visual style variants available per tile kind (the renderer holds the art). */
+export const FLOOR_STYLES = 3;
+export const WALL_STYLES = 4;
+export const DOOR_STYLES = 3;

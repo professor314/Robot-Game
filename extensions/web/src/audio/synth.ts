@@ -79,3 +79,60 @@ export function playNote(
     osc.stop(time + duration);
   }
 }
+
+/** A percussion hit kind for the drum channel. */
+export type DrumKind = 'kick' | 'snare' | 'hat';
+
+/**
+ * Play a single drum hit at `time` through `out` at `gain`. Kick is a fast pitch-dropping sine
+ * (classic 8-bit thump); snare and hat are filtered noise bursts (snare lower/longer, hat
+ * short/bright). This is what gives the music an actual beat.
+ */
+export function playDrum(
+  ctx: AudioContext,
+  out: AudioNode,
+  kind: DrumKind,
+  time: number,
+  gain: number,
+): void {
+  const env = ctx.createGain();
+  env.connect(out);
+  const peak = Math.max(0.0001, gain);
+
+  if (kind === 'kick') {
+    const dur = 0.12;
+    env.gain.setValueAtTime(peak, time);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(45, time + dur);
+    osc.connect(env);
+    osc.start(time);
+    osc.stop(time + dur);
+    return;
+  }
+
+  // Snare / hat: noise through a band/high-pass, short envelope.
+  const dur = kind === 'snare' ? 0.14 : 0.05;
+  env.gain.setValueAtTime(peak, time);
+  env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+  const length = Math.floor(ctx.sampleRate * dur);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  if (kind === 'snare') {
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800;
+    filter.Q.value = 0.7;
+  } else {
+    filter.type = 'highpass';
+    filter.frequency.value = 7000;
+  }
+  src.connect(filter).connect(env);
+  src.start(time);
+  src.stop(time + dur);
+}

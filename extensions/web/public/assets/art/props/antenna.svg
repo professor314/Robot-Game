@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="pant-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="32" cy="54" rx="14" ry="5" fill="#bd93f9" opacity="0.5"/>
+  <line x1="32" y1="54" x2="32" y2="30" stroke="#8be9fd" stroke-width="3"/>
+  <path d="M14,30 Q32,6 50,30 Z" fill="#1b2740" stroke="#8be9fd" stroke-width="2" opacity="0.8"/>
+  <line x1="32" y1="30" x2="32" y2="14" stroke="#ff92d0" stroke-width="2"/>
+  <circle cx="32" cy="12" r="4" fill="#ff92d0" filter="url(#pant-glow)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1.3s" repeatCount="indefinite"/></circle></svg>

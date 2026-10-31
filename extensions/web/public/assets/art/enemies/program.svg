@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" aria-hidden="true" role="img"><defs><filter id="e3-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <line x1="150" y1="40" x2="150" y2="16" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="150" cy="12" r="5" fill="#ff5555" filter="url(#e3-glow)"/>
+  <!-- translucent boxy head -->
+  <rect x="112" y="40" width="76" height="56" rx="4" fill="#ff5555" opacity="0.12" stroke="#ff5555" stroke-width="1.5"/>
+  <rect x="124" y="58" width="22" height="16" rx="2" fill="#ff5555" filter="url(#e3-glow)" opacity="0.8"/>
+  <rect x="154" y="58" width="22" height="16" rx="2" fill="#ff5555" filter="url(#e3-glow)" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.2;0.8" dur="0.5s" repeatCount="indefinite"/></rect>
+  <!-- wireframe body -->
+  <rect x="88" y="104" width="124" height="104" rx="6" fill="#bd93f9" opacity="0.1" stroke="#ff5555" stroke-width="1.5"/>
+  <line x1="88" y1="104" x2="212" y2="208" stroke="#ff5555" stroke-width="0.6" opacity="0.5"/>
+  <line x1="212" y1="104" x2="88" y2="208" stroke="#ff5555" stroke-width="0.6" opacity="0.5"/>
+  <line x1="150" y1="104" x2="150" y2="208" stroke="#ffb86c" stroke-width="0.6" opacity="0.5"/>
+  <line x1="88" y1="156" x2="212" y2="156" stroke="#ffb86c" stroke-width="0.6" opacity="0.5"/>
+  <!-- energy core -->
+  <circle cx="150" cy="156" r="18" fill="#ff5555" filter="url(#e3-glow)" opacity="0.6">
+    <animate attributeName="r" values="14;20;14" dur="1.5s" repeatCount="indefinite"/></circle>
+  <circle cx="150" cy="156" r="7" fill="#fff" opacity="0.7"/>
+  <!-- ghostly limbs -->
+  <line x1="88" y1="120" x2="52" y2="180" stroke="#ff5555" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+  <line x1="212" y1="120" x2="248" y2="180" stroke="#ff5555" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+  <line x1="120" y1="208" x2="110" y2="300" stroke="#ff5555" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+  <line x1="180" y1="208" x2="190" y2="300" stroke="#ff5555" stroke-width="3" opacity="0.5" stroke-linecap="round"/>
+</svg>

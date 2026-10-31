@@ -1,4 +1,5 @@
 import { Direction } from '../data/world';
+import type { Item, Prop } from './props';
 import { TileKind, isWalkable } from './tiles';
 
 /** Fixed room dimensions in tiles. All rooms are the same size. */
@@ -24,6 +25,15 @@ export class Room {
   gridX = 0;
   gridY = 0;
 
+  /**
+   * Art style indices for this room, assigned deterministically from the seed. The renderer
+   * maps these to concrete SVG tiles. Walls are uniform within a room (one wall style per
+   * room); floor and door styles likewise. Index into the renderer's style arrays.
+   */
+  floorStyle = 0;
+  wallStyle = 0;
+  doorStyle = 0;
+
   /** Directions that have a door (a neighbor exists that way). */
   readonly doors = new Set<Direction>();
 
@@ -32,6 +42,13 @@ export class Room {
 
   /** Whether the player has visited (revealed) this room. */
   visited = false;
+
+  /** Decorative/structural props placed in the room (set by the furnisher). */
+  props: Prop[] = [];
+  /** Interactive items in the room (set by the furnisher). */
+  items: Item[] = [];
+  /** Tile keys ("x,y") blocked by a solid prop; movement routes around them. */
+  readonly blocked = new Set<string>();
 
   constructor(key: string, zone: string, blurb: string, pvpZone: boolean) {
     this.key = key;
@@ -79,9 +96,10 @@ export class Room {
     }
   }
 
-  /** True if the given in-room tile can be walked onto. */
+  /** True if the given in-room tile can be walked onto (floor/door and not blocked by a prop). */
   isWalkable(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= ROOM_WIDTH || y >= ROOM_HEIGHT) return false;
+    if (this.blocked.has(`${x},${y}`)) return false;
     return isWalkable(this.tiles[x][y]);
   }
 }

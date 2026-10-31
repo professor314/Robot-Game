@@ -38,6 +38,8 @@ export function installDebugAgentHook(
         return Commands.useSkill(action.skillId);
       case 'pickup':
         return Commands.pickup();
+      case 'interact':
+        return Commands.interact();
       case 'wait':
         return Commands.wait();
     }

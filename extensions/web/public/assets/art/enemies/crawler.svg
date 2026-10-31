@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true" role="img"><defs><filter id="e4-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="e4-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></linearGradient></defs>
+  <line x1="70" y1="150" x2="35" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="35" y1="210" x2="25" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/><line x1="95" y1="150" x2="60" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="60" y1="210" x2="50" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/><line x1="120" y1="150" x2="85" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="85" y1="210" x2="75" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/><line x1="180" y1="150" x2="215" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="215" y1="210" x2="225" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/><line x1="205" y1="150" x2="240" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="240" y1="210" x2="250" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/><line x1="230" y1="150" x2="265" y2="210" stroke="#bd93f9" stroke-width="5" stroke-linecap="round"/><line x1="265" y1="210" x2="275" y2="260" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="150" cy="140" rx="80" ry="48" fill="url(#e4-b)" stroke="#ff5555" stroke-width="2"/>
+  <ellipse cx="150" cy="120" rx="60" ry="24" fill="#0d0d1a" opacity="0.4"/>
+  <!-- cluster of red eyes -->
+  <circle cx="128" cy="128" r="7" fill="#ff5555" filter="url(#e4-glow)"/>
+  <circle cx="150" cy="122" r="7" fill="#ff5555" filter="url(#e4-glow)"/>
+  <circle cx="172" cy="128" r="7" fill="#ff5555" filter="url(#e4-glow)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.7s" repeatCount="indefinite"/></circle>
+  <circle cx="139" cy="140" r="5" fill="#ffb86c" filter="url(#e4-glow)"/>
+  <circle cx="161" cy="140" r="5" fill="#ffb86c" filter="url(#e4-glow)"/>
+  <!-- mandibles -->
+  <path d="M130,165 l-10,22" stroke="#ff5555" stroke-width="3" stroke-linecap="round"/>
+  <path d="M170,165 l10,22" stroke="#ff5555" stroke-width="3" stroke-linecap="round"/>
+</svg>

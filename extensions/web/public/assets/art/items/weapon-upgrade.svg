@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="wu-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect x="18" y="14" width="28" height="36" rx="5" fill="#0d0d1a" stroke="#ff92d0" stroke-width="2"/>
+  <path d="M32,20 l8,14 l-6,0 l6,12 l-14,-16 l6,0 z" fill="#ff92d0" filter="url(#wu-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1s" repeatCount="indefinite"/></path>
+  <circle cx="24" cy="44" r="2" fill="#8be9fd"/>
+  <circle cx="40" cy="44" r="2" fill="#8be9fd"/>
+</svg>

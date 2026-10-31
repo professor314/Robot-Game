@@ -29,4 +29,23 @@ export class Rng {
   pick<T>(items: readonly T[]): T {
     return items[this.nextInt(0, items.length - 1)];
   }
+
+  /**
+   * A roughly bell-curved float in [0, 1), via the mean of `rolls` uniform samples (central
+   * limit theorem). Higher `rolls` = tighter around 0.5. Used so combat damage and mining
+   * yields cluster around a typical value with occasional highs/lows, rather than being flat.
+   */
+  bell(rolls = 3): number {
+    let sum = 0;
+    for (let i = 0; i < rolls; i++) sum += this.next();
+    return sum / rolls;
+  }
+
+  /**
+   * A bell-curved integer in [min, max] inclusive, clustered toward the middle of the range.
+   */
+  bellInt(min: number, max: number): number {
+    if (max <= min) return min;
+    return min + Math.round(this.bell() * (max - min));
+  }
 }

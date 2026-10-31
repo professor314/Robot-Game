@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" aria-hidden="true" role="img"><defs><filter id="ptel-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <ellipse cx="32" cy="52" rx="16" ry="5" fill="#bd93f9" opacity="0.5"/>
+  <rect x="28" y="36" width="8" height="16" fill="#bd93f9"/>
+  <g transform="rotate(-35 32 34)">
+    <rect x="18" y="26" width="34" height="14" rx="7" fill="#2a2e3a" stroke="#8be9fd" stroke-width="2"/>
+    <circle cx="50" cy="33" r="8" fill="#0d0d1a" stroke="#ff92d0" stroke-width="2"/>
+    <circle cx="50" cy="33" r="4" fill="#ff92d0" filter="url(#ptel-glow)"/>
+  </g></svg>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 440" width="300" height="440" aria-hidden="true" role="img">
+  <defs>
+    <linearGradient id="r06-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8be9fd"/>
+      <stop offset="100%" stop-color="#bd93f9"/>
+    </linearGradient>
+    <filter id="r06-glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="r06-visor" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff92d0" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#ff92d0"/>
+      <stop offset="100%" stop-color="#bd93f9" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tiny antenna -->
+  <line x1="150" y1="38" x2="150" y2="20" stroke="#bd93f9" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="150" cy="17" r="4" fill="#50fa7b" filter="url(#r06-glow)">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Tiny head -->
+  <rect x="133" y="38" width="34" height="28" rx="5" fill="#8be9fd" stroke="#bd93f9" stroke-width="1.5"/>
+  <!-- Big visor on tiny head -->
+  <rect x="130" y="44" width="40" height="14" rx="7" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <rect x="133" y="46" width="34" height="10" rx="5" fill="url(#r06-visor)" filter="url(#r06-glow)">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="2.5s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Thin neck -->
+  <line x1="150" y1="66" x2="150" y2="82" stroke="#bd93f9" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Small round body -->
+  <circle cx="150" cy="110" r="32" fill="url(#r06-body)" stroke="#8be9fd" stroke-width="2"/>
+  <!-- Body panel -->
+  <rect x="132" y="95" width="36" height="25" rx="4" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <!-- Indicator lights -->
+  <circle cx="142" cy="103" r="3" fill="#ff92d0" filter="url(#r06-glow)"/>
+  <circle cx="152" cy="103" r="3" fill="#50fa7b" filter="url(#r06-glow)"/>
+  <circle cx="162" cy="103" r="3" fill="#ffb86c" filter="url(#r06-glow)"/>
+  <!-- Mini meter -->
+  <rect x="137" y="111" width="26" height="5" rx="1" fill="#0d0d1a" stroke="#8be9fd" stroke-width="0.5"/>
+  <rect x="139" y="112" width="16" height="3" rx="1" fill="#8be9fd" opacity="0.5"/>
+
+  <!-- Rivets on body -->
+  <circle cx="125" cy="100" r="2" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="175" cy="100" r="2" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="125" cy="120" r="2" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="175" cy="120" r="2" fill="#bd93f9" opacity="0.5"/>
+
+  <!-- Long thin left arm -->
+  <circle cx="118" cy="100" r="5" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <line x1="115" y1="104" x2="80" y2="165" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="80" cy="165" r="4" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1.5"/>
+  <line x1="78" y1="168" x2="65" y2="200" stroke="#8be9fd" stroke-width="3" stroke-linecap="round"/>
+  <!-- Hand -->
+  <circle cx="65" cy="202" r="7" fill="#bd93f9"/>
+  <line x1="60" y1="208" x2="58" y2="216" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="65" y1="209" x2="65" y2="218" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="70" y1="208" x2="72" y2="216" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Long thin right arm -->
+  <circle cx="182" cy="100" r="5" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <line x1="185" y1="104" x2="220" y2="165" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="220" cy="165" r="4" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1.5"/>
+  <line x1="222" y1="168" x2="235" y2="200" stroke="#8be9fd" stroke-width="3" stroke-linecap="round"/>
+  <!-- Hand -->
+  <circle cx="235" cy="202" r="7" fill="#bd93f9"/>
+  <line x1="230" y1="208" x2="228" y2="216" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="235" y1="209" x2="235" y2="218" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+  <line x1="240" y1="208" x2="242" y2="216" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Hip joint -->
+  <ellipse cx="150" cy="142" rx="20" ry="6" fill="#bd93f9" opacity="0.6"/>
+
+  <!-- Tall thin left leg -->
+  <line x1="138" y1="145" x2="115" y2="260" stroke="#8be9fd" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="126" cy="200" r="5" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1.5"/>
+  <line x1="115" y1="260" x2="105" y2="370" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="110" cy="315" r="4" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <!-- Foot â€” wide flat -->
+  <ellipse cx="100" cy="375" rx="25" ry="8" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <ellipse cx="100" cy="375" rx="15" ry="4" fill="#0d0d1a" opacity="0.3"/>
+
+  <!-- Tall thin right leg -->
+  <line x1="162" y1="145" x2="185" y2="260" stroke="#8be9fd" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="174" cy="200" r="5" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1.5"/>
+  <line x1="185" y1="260" x2="195" y2="370" stroke="#8be9fd" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="190" cy="315" r="4" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <!-- Foot -->
+  <ellipse cx="200" cy="375" rx="25" ry="8" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <ellipse cx="200" cy="375" rx="15" ry="4" fill="#0d0d1a" opacity="0.3"/>
+</svg>

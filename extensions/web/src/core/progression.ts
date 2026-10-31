@@ -82,6 +82,54 @@ export class Progression {
   chassisEquipped = false;
 
   /**
+   * Countable resources the player holds, keyed by resource id (e.g. 'ore', 'component',
+   * 'cell'). A single general-purpose inventory so new collectible types don't need new fields.
+   */
+  readonly inventory = new Map<string, number>();
+
+  /**
+   * Weapon tier. Each upgrade found auto-installs and raises this, which the combat system
+   * reads as bonus attack output (processing). Starts at 0 (base weapon).
+   */
+  weaponLevel = 0;
+
+  /** Mining-laser tier (0 = base). Crafting a better laser raises it (faster mining). */
+  miningLevel = 0;
+
+  /** Recipe ids the player has discovered (found as data chips in rooms). */
+  readonly knownRecipes = new Set<string>();
+
+  /** Add `amount` of a countable resource to the inventory. Returns the new total. */
+  addToInventory(resource: string, amount = 1): number {
+    const next = (this.inventory.get(resource) ?? 0) + amount;
+    this.inventory.set(resource, next);
+    return next;
+  }
+
+  /** How much of a resource the player holds. */
+  countOf(resource: string): number {
+    return this.inventory.get(resource) ?? 0;
+  }
+
+  /** True if the player holds at least `amount` of every listed material. */
+  hasMaterials(cost: ReadonlyArray<readonly [string, number]>): boolean {
+    return cost.every(([res, qty]) => this.countOf(res) >= qty);
+  }
+
+  /** Deduct a material cost from the inventory. Returns false (no change) if unaffordable. */
+  spendMaterials(cost: ReadonlyArray<readonly [string, number]>): boolean {
+    if (!this.hasMaterials(cost)) return false;
+    for (const [res, qty] of cost) this.inventory.set(res, this.countOf(res) - qty);
+    return true;
+  }
+
+  /** Install a weapon upgrade (raise the weapon tier). Returns the new tier. */
+  upgradeWeapon(): number {
+    this.weaponLevel += 1;
+    return this.weaponLevel;
+  }
+
+  /**
    * Award XP and recompute level. Returns the new level if the player leveled up (one or more
    * levels), otherwise null. Rewards come from defeated hostiles.
    */

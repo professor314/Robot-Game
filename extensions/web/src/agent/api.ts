@@ -11,6 +11,7 @@ export type Action =
   | { type: 'attack' }
   | { type: 'useSkill'; skillId: string }
   | { type: 'pickup' }
+  | { type: 'interact' }
   | { type: 'wait' };
 
 /** A nearby entity as seen by an agent. */
@@ -70,6 +71,8 @@ function toCommand(action: Action): Command {
       return Commands.useSkill(action.skillId);
     case 'pickup':
       return Commands.pickup();
+    case 'interact':
+      return Commands.interact();
     case 'wait':
       return Commands.wait();
   }
@@ -109,7 +112,12 @@ export class AgentApi {
 
   /** The directions the player can currently move (has a door or walkable neighbor tile). */
   private legalActions(): Action[] {
-    const actions: Action[] = [{ type: 'wait' }, { type: 'attack' }, { type: 'pickup' }];
+    const actions: Action[] = [
+      { type: 'wait' },
+      { type: 'attack' },
+      { type: 'pickup' },
+      { type: 'interact' },
+    ];
     const room = this.world.currentRoom;
     const p = this.world.player;
     const deltas: Record<Direction, { dx: number; dy: number }> = {

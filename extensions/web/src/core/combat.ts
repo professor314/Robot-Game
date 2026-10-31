@@ -1,9 +1,13 @@
 import { Entity, tileDistance } from './entity';
 import { EventBus } from './events';
+import { Rng } from './rng';
 import { applyDamage, computeDamage } from './stats';
 
 /** Fixed attack cooldown per entity, in milliseconds. Tunable; see design (real-time combat). */
 export const ATTACK_COOLDOWN_MS = 600;
+
+/** Max fraction the bell-curve roll swings damage above/below the base value (±40%). */
+const DAMAGE_VARIANCE = 0.4;
 
 /** The outcome of resolving a single attack. */
 export interface AttackResult {
@@ -38,7 +42,17 @@ export class CombatSystem implements ICombatSystem {
   constructor(
     private readonly events: EventBus,
     private readonly cooldownMs: number = ATTACK_COOLDOWN_MS,
+    /** Optional seeded RNG for bell-curve damage variance; omit for deterministic base damage. */
+    private readonly rng?: Rng,
   ) {}
+
+  /** Apply bell-curve variance (±DAMAGE_VARIANCE) around a base damage value, min 1. */
+  private vary(base: number): number {
+    if (!this.rng) return base;
+    // bell() in [0,1) → factor in [1-v, 1+v], clustered at 1.0.
+    const factor = 1 - DAMAGE_VARIANCE + this.rng.bell() * (2 * DAMAGE_VARIANCE);
+    return Math.max(1, Math.round(base * factor));
+  }
 
   tickCooldowns(entities: readonly Entity[], dtMs: number): void {
     for (const e of entities) {
@@ -60,7 +74,7 @@ export class CombatSystem implements ICombatSystem {
     if (!this.canAttack(attacker)) return miss;
     if (!this.isInRange(attacker, target)) return miss;
 
-    const amount = computeDamage(attacker.stats, target.stats);
+    const amount = this.vary(computeDamage(attacker.stats, target.stats));
     const dealt = applyDamage(target.stats, amount);
     attacker.attackCooldownMs = this.cooldownMs;
 

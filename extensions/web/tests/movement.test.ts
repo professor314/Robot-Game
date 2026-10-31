@@ -56,4 +56,16 @@ describe('player movement and collision', () => {
     for (let i = 0; i < ROOM_WIDTH; i++) world.apply(Commands.move('west'));
     expect(world.player.facing).toBe('left');
   });
+
+  it('cannot move onto a tile occupied by an enemy', () => {
+    const world = new WorldState({ seed: 3 });
+    const h = world.hostiles[0];
+    // Put the player in the hostile's room, directly west of it, and try to step east onto it.
+    world.player.roomKey = h.roomKey;
+    world.player.x = h.x - 1;
+    world.player.y = h.y;
+    const beforeX = world.player.x;
+    world.apply(Commands.move('east'));
+    expect(world.player.x).toBe(beforeX); // blocked by the enemy
+  });
 });

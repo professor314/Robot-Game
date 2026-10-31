@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="300" height="360" aria-hidden="true" role="img">
+  <defs>
+    <radialGradient id="r03-barrel" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#8be9fd"/>
+      <stop offset="100%" stop-color="#bd93f9"/>
+    </radialGradient>
+    <filter id="r03-glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <radialGradient id="r03-eye" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ff92d0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Antenna â€” short stubby -->
+  <line x1="150" y1="52" x2="150" y2="30" stroke="#bd93f9" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="150" cy="25" r="5" fill="#ffb86c" filter="url(#r03-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Round head -->
+  <circle cx="150" cy="80" r="35" fill="#8be9fd" stroke="#bd93f9" stroke-width="2"/>
+  <!-- Head highlight -->
+  <ellipse cx="140" cy="65" rx="15" ry="8" fill="#fff" opacity="0.1"/>
+
+  <!-- Big circular eyes -->
+  <circle cx="133" cy="78" r="14" fill="#0d0d1a" stroke="#ff92d0" stroke-width="2"/>
+  <circle cx="133" cy="78" r="10" fill="url(#r03-eye)" filter="url(#r03-glow)"/>
+  <circle cx="130" cy="75" r="4" fill="#fff" opacity="0.6"/>
+  <circle cx="167" cy="78" r="14" fill="#0d0d1a" stroke="#ff92d0" stroke-width="2"/>
+  <circle cx="167" cy="78" r="10" fill="url(#r03-eye)" filter="url(#r03-glow)"/>
+  <circle cx="164" cy="75" r="4" fill="#fff" opacity="0.6"/>
+
+  <!-- Smile -->
+  <path d="M138,98 Q150,108 162,98" fill="none" stroke="#ff92d0" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Neck â€” short -->
+  <rect x="140" y="112" width="20" height="10" rx="3" fill="#bd93f9"/>
+
+  <!-- Barrel body â€” wide ellipse -->
+  <ellipse cx="150" cy="195" rx="85" ry="70" fill="url(#r03-barrel)" stroke="#8be9fd" stroke-width="2"/>
+  <!-- Barrel bands -->
+  <ellipse cx="150" cy="160" rx="80" ry="8" fill="none" stroke="#bd93f9" stroke-width="1.5" opacity="0.5"/>
+  <ellipse cx="150" cy="195" rx="85" ry="10" fill="none" stroke="#bd93f9" stroke-width="1.5" opacity="0.5"/>
+  <ellipse cx="150" cy="230" rx="80" ry="8" fill="none" stroke="#bd93f9" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Chest panel -->
+  <rect x="120" y="170" width="60" height="40" rx="5" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1.5"/>
+  <!-- Buttons -->
+  <circle cx="135" cy="183" r="5" fill="#ff92d0" opacity="0.7"/>
+  <circle cx="150" cy="183" r="5" fill="#50fa7b" opacity="0.7"/>
+  <circle cx="165" cy="183" r="5" fill="#ffb86c" opacity="0.7"/>
+  <!-- Meter -->
+  <rect x="128" y="195" width="44" height="8" rx="2" fill="#0d0d1a" stroke="#8be9fd" stroke-width="0.5"/>
+  <rect x="130" y="197" width="28" height="4" rx="1" fill="#50fa7b" opacity="0.6">
+    <animate attributeName="width" values="28;15;28" dur="3s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- Rivets around barrel -->
+  <circle cx="75" cy="180" r="3" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="75" cy="210" r="3" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="225" cy="180" r="3" fill="#bd93f9" opacity="0.5"/>
+  <circle cx="225" cy="210" r="3" fill="#bd93f9" opacity="0.5"/>
+
+  <!-- Stubby left arm -->
+  <rect x="50" y="175" width="18" height="12" rx="4" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <rect x="38" y="182" width="16" height="35" rx="6" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <circle cx="46" cy="200" r="3" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <ellipse cx="46" cy="220" rx="10" ry="7" fill="#bd93f9"/>
+
+  <!-- Stubby right arm -->
+  <rect x="232" y="175" width="18" height="12" rx="4" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <rect x="246" y="182" width="16" height="35" rx="6" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <circle cx="254" cy="200" r="3" fill="#0d0d1a" stroke="#bd93f9" stroke-width="1"/>
+  <ellipse cx="254" cy="220" rx="10" ry="7" fill="#bd93f9"/>
+
+  <!-- Short legs -->
+  <rect x="120" y="258" width="22" height="40" rx="6" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <rect x="158" y="258" width="22" height="40" rx="6" fill="#8be9fd" stroke="#bd93f9" stroke-width="1"/>
+  <!-- Feet â€” round -->
+  <ellipse cx="131" cy="300" rx="18" ry="10" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+  <ellipse cx="169" cy="300" rx="18" ry="10" fill="#bd93f9" stroke="#8be9fd" stroke-width="1"/>
+</svg>

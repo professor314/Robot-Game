@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" aria-hidden="true" role="img"><defs><filter id="e2-glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="e2-o" cx="40%" cy="35%" r="60%"><stop offset="0%" stop-color="#8be9fd"/><stop offset="100%" stop-color="#bd93f9"/></radialGradient></defs>
+  <!-- rotor bar -->
+  <rect x="40" y="70" width="220" height="8" rx="4" fill="#bd93f9" opacity="0.7"/>
+  <ellipse cx="55" cy="74" rx="26" ry="8" fill="#ffb86c" opacity="0.4"/>
+  <ellipse cx="245" cy="74" rx="26" ry="8" fill="#ffb86c" opacity="0.4"/>
+  <line x1="150" y1="78" x2="150" y2="110" stroke="#bd93f9" stroke-width="4"/>
+  <!-- orb body -->
+  <circle cx="150" cy="170" r="62" fill="url(#e2-o)" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="150" cy="170" r="62" fill="none" stroke="#ffb86c" stroke-width="1" opacity="0.4"/>
+  <!-- angry eye band -->
+  <rect x="104" y="150" width="92" height="26" rx="13" fill="#0d0d1a" stroke="#ff5555" stroke-width="2"/>
+  <circle cx="128" cy="163" r="8" fill="#ff5555" filter="url(#e2-glow)"/>
+  <circle cx="172" cy="163" r="8" fill="#ff5555" filter="url(#e2-glow)">
+    <animate attributeName="opacity" values="1;0.4;1" dur="0.6s" repeatCount="indefinite"/></circle>
+  <!-- warning light -->
+  <circle cx="150" cy="205" r="7" fill="#ffb86c" filter="url(#e2-glow)"/>
+  <circle cx="98" cy="150" r="3" fill="#bd93f9"/>
+  <circle cx="202" cy="150" r="3" fill="#bd93f9"/>
+  <!-- thruster -->
+  <path d="M135,228 l30,0 l-8,24 l-14,0 z" fill="#ffb86c" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0.3;0.7" dur="0.4s" repeatCount="indefinite"/></path>
+</svg>
