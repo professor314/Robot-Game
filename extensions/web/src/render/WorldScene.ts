@@ -4,7 +4,7 @@ import { GameEvent } from '../core/events';
 import { ROOM_HEIGHT, ROOM_WIDTH, Room } from '../core/room';
 import { WorldState } from '../core/state';
 import { TileKind } from '../core/tiles';
-import { Direction } from '../data/world';
+import { Direction, ROOM_LOCKS, keyColorFor } from '../data/world';
 import { MISSIONS } from '../data/missions';
 import { ALL_BOSSES } from '../data/bosses';
 import { AudioManager } from '../audio/AudioManager';
@@ -310,6 +310,11 @@ export class WorldScene extends Phaser.Scene {
           TILE * 0.75,
         );
         img.setDepth(3).setVisible(!item.collected);
+        // Tint a key card to match the color of the doors it opens.
+        if (item.kind === 'keycard' && item.keyId) {
+          const color = keyColorFor(item.keyId);
+          if (color !== undefined) img.setTint(color);
+        }
         container.add(img);
         this.itemSprites.set(item.id, img);
       }
@@ -330,8 +335,59 @@ export class WorldScene extends Phaser.Scene {
         this.installMarkers.set(room.key, marker);
       }
 
+      // Locked-door markers: for each door leading into a key-gated room, tint the door and
+      // overlay a lock glyph in that key's color so the player can match card to door.
+      this.drawLockedDoors(room, container);
+
       container.setVisible(room.visited);
       this.roomLayers.set(room.key, container);
+    }
+  }
+
+  /** Lock-glyph overlays keyed by "roomKey:dir", removed when the matching key is found. */
+  private readonly lockMarkers = new Map<string, Phaser.GameObjects.Container>();
+
+  /** Draw a colored lock glyph on each door that leads into a locked room. */
+  private drawLockedDoors(room: Room, container: Phaser.GameObjects.Container): void {
+    for (const dir of ['north', 'south', 'east', 'west'] as Direction[]) {
+      const neighborKey = this.state.graph.neighborOf(room.key, dir);
+      if (!neighborKey) continue;
+      const requiredKey = ROOM_LOCKS[neighborKey];
+      if (!requiredKey) continue;
+      const door = room.doorTile(dir);
+      if (!door) continue;
+      const color = keyColorFor(requiredKey) ?? 0xffb86c;
+      const cx = door.x * TILE + TILE / 2;
+      const cy = door.y * TILE + TILE / 2;
+
+      const glyph = this.add.container(cx, cy);
+      // Shackle + body of a small padlock, drawn in the key's color.
+      const g = this.add.graphics();
+      g.lineStyle(2, color, 1);
+      g.strokeRoundedRect(-5, -8, 10, 8, 3); // shackle
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(-7, -2, 14, 11, 2); // body
+      g.fillStyle(0x0d0d1a, 1);
+      g.fillCircle(0, 3, 2); // keyhole
+      glyph.add(g);
+      glyph.setDepth(5);
+      container.add(glyph);
+      this.lockMarkers.set(`${room.key}:${dir}`, glyph);
+    }
+  }
+
+  /** Remove all lock glyphs for a now-unlocked room (both sides of every door into it). */
+  private clearLockMarkersFor(unlockedRoomKey: string): void {
+    for (const dir of ['north', 'south', 'east', 'west'] as Direction[]) {
+      const neighborKey = this.state.graph.neighborOf(unlockedRoomKey, dir);
+      if (!neighborKey) continue;
+      // The glyph lives on the neighbor room's door facing back toward the unlocked room.
+      const back = { north: 'south', south: 'north', east: 'west', west: 'east' }[dir] as Direction;
+      const marker = this.lockMarkers.get(`${neighborKey}:${back}`);
+      if (marker) {
+        marker.destroy();
+        this.lockMarkers.delete(`${neighborKey}:${back}`);
+      }
     }
   }
 
@@ -444,6 +500,11 @@ export class WorldScene extends Phaser.Scene {
       if (ev.code === 'KeyR') {
         ev.preventDefault();
         this.state.apply(Commands.rangedAttack());
+        return;
+      }
+      if (ev.code === 'KeyB') {
+        ev.preventDefault();
+        this.state.apply(Commands.useItem('repair cell'));
         return;
       }
       if (ev.code === 'KeyT') {
@@ -562,10 +623,15 @@ export class WorldScene extends Phaser.Scene {
         this.audio.sfx('levelup');
         this.floatText(this.player, 'INSTALLED', '#5affa0', 20);
         break;
-      case 'keyFound':
+      case 'keyFound': {
         this.audio.sfx('pickup');
-        this.floatText(this.player, 'KEY', '#ffb86c', 20);
+        const col = keyColorFor(e.keyId);
+        this.floatText(this.player, 'KEY', col !== undefined ? `#${col.toString(16).padStart(6, '0')}` : '#ffb86c', 20);
+        // Remove the lock glyphs on the doors this key opens.
+        const gated = Object.entries(ROOM_LOCKS).find(([, keyId]) => keyId === e.keyId);
+        if (gated) this.clearLockMarkersFor(gated[0]);
         break;
+      }
       case 'componentRecovered':
         this.audio.sfx('levelup');
         break;

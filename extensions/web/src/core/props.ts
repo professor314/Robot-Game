@@ -125,8 +125,15 @@ export interface Item {
   componentId?: string;
 }
 
-/** Props that block movement (the player and hostiles route around them). */
+/**
+ * Props that block movement (the player and hostiles route around them). Anything solid you
+ * couldn't logically stand on is here: tanks, consoles, furniture, and crates. Only flat or
+ * floor-level props stay walkable: floor `pipe` conduits, low `debris` rubble, and `ore`
+ * deposits (walkable so the player can stand on/next to them to mine).
+ */
 const BLOCKING: ReadonlySet<PropKind> = new Set<PropKind>([
+  'crate',
+  'crateGreen',
   'tank',
   'console',
   'scanner',

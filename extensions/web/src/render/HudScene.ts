@@ -16,6 +16,7 @@ const CONTROLS: [string, string][] = [
   ['Attack', 'Space / F'],
   ['Dash', 'Shift'],
   ['Ranged', 'R'],
+  ['Use repair cell', 'B'],
   ['Interact / install', 'E'],
   ['Overclock / Repair', 'Q / Z'],
   ['Inventory / Craft', 'I / C'],
@@ -36,6 +37,7 @@ export class HudScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private roomText!: Phaser.GameObjects.Text;
   private objectiveText!: Phaser.GameObjects.Text;
+  private objectivePlate!: Phaser.GameObjects.Rectangle;
   private logText!: Phaser.GameObjects.Text;
   private controlsBox!: Phaser.GameObjects.Container;
   private inventoryBox!: Phaser.GameObjects.Container;
@@ -63,8 +65,13 @@ export class HudScene extends Phaser.Scene {
     this.barFill = this.add.rectangle(11, 25, 178, 12, 0x3fd1c7).setOrigin(0, 0);
     this.statusText = this.add.text(10, 44, '', style);
     this.roomText = this.add.text(10, 64, '', { ...style, color: '#bdeaf6' });
-    // Objective tracker (top-centre).
-    this.objectiveText = this.add.text(this.scale.width / 2, 10, '', {
+    // Objective tracker (top-centre). Backed by a translucent plate and nudged down from the
+    // very top edge so it stays fully visible in the fullscreen/embedded views (where the top
+    // row of pixels can sit flush against the frame).
+    this.objectivePlate = this.add.rectangle(this.scale.width / 2, 6, 520, 44, 0x0c0c16, 0.6)
+      .setOrigin(0.5, 0)
+      .setStrokeStyle(1, 0x2a2a4a);
+    this.objectiveText = this.add.text(this.scale.width / 2, 14, '', {
       ...style,
       fontSize: '13px',
       color: '#ffe08a',
@@ -161,6 +168,8 @@ export class HudScene extends Phaser.Scene {
     lines.push(`Weapon: Mk.${prog.weaponLevel + 1}${this.world.state.rangedUnlocked ? ' (ranged)' : ''}`);
     lines.push(`Mining laser: ${this.world.state.miningLaserEquipped ? `Mk.${prog.miningLevel + 1}` : 'none'}`);
     lines.push(`Shielding: ${this.world.state.player.stats.shielding}   Credits: ${prog.credits}`);
+    const cells = prog.countOf('repair cell');
+    lines.push(`Repair cells: ${cells}  (press B to use)`);
     const keys = [...this.world.state.keys];
     lines.push(`Key cards: ${keys.length ? keys.join(', ') : 'none'}`);
     lines.push('');
@@ -246,6 +255,7 @@ export class HudScene extends Phaser.Scene {
     this.inventoryBox.setPosition(10, 100);
     this.craftBox.setPosition(Math.max(260, this.scale.width / 2 - 160), 100);
     this.objectiveText.setX(this.scale.width / 2);
+    this.objectivePlate.setX(this.scale.width / 2);
   }
 
   private refresh(): void {
@@ -262,6 +272,11 @@ export class HudScene extends Phaser.Scene {
     );
     this.roomText.setText(this.world.state.currentRoom.key);
     this.objectiveText.setText(this.objectiveLine());
+    // Keep the backing plate sized to the objective text (it grows for the 2-line form).
+    this.objectivePlate.setSize(
+      Math.max(300, this.objectiveText.width + 24),
+      this.objectiveText.height + 12,
+    );
     if (this.inventoryOpen) this.refreshInventory();
     if (this.craftOpen) this.refreshCraft();
   }

@@ -58,6 +58,7 @@ and max-integrity). Defeat it and the ship departs for Earth. The ending leads i
 | **Space** / **F** | Attack an adjacent enemy. |
 | **Shift** | **Dash** — lunge several tiles in your facing direction with brief invulnerability (i-frames). Has a cooldown; blocked by walls. |
 | **R** | **Ranged attack** — fire down your facing line. Unlocked by crafting a ranged weapon. |
+| **B** | **Use a Repair Cell** — spend a crafted repair cell to restore integrity (works mid-fight). |
 | **E** | Interact: mine junk, use a repair bay, **install a component**, or **read a log terminal** — whichever you're next to. |
 | **Q** | Overclock — temporary attack boost (cooldown). |
 | **Z** | Nanite Repair — restore integrity (cooldown). |
@@ -130,7 +131,7 @@ materials). Press **V** inside it, then a number key to buy:
 Find **recipe chips** in rooms to learn recipes, then press **C** and a number to build. Current
 recipes include:
 
-- **Power Battery** — a quick heal.
+- **Repair Cell** — crafts a carryable charge; press **B** to use one and restore integrity mid-fight.
 - **Reinforced Plating** — permanent +shielding.
 - **Plasma Edge** — a heavier melee weapon (+attack).
 - **Capacitor Cannon** — unlocks your **ranged attack**.

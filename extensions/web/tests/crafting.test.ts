@@ -74,14 +74,22 @@ describe('crafting', () => {
     expect(crafted).toBe(false);
   });
 
-  it('crafts a battery: spends materials and restores integrity', () => {
+  it('crafts a Repair Cell: spends materials and stocks a carryable cell (heals on use)', () => {
     const world = new WorldState({ seed: 9 });
     stock(world, 'battery');
     world.player.stats.integrity = 40;
     world.apply(Commands.craft('battery'));
     world.tick(16);
-    expect(world.player.stats.integrity).toBeGreaterThan(40);
+    // Crafting does NOT heal immediately; it stocks a usable cell.
+    expect(world.player.stats.integrity).toBe(40);
+    expect(world.progression.countOf('repair cell')).toBe(1);
     expect(world.progression.hasMaterials(recipeById('battery')!.cost)).toBe(false);
+
+    // Using the cell (the B key / useItem command) restores integrity and consumes it.
+    world.apply(Commands.useItem('repair cell'));
+    world.tick(16);
+    expect(world.player.stats.integrity).toBeGreaterThan(40);
+    expect(world.progression.countOf('repair cell')).toBe(0);
   });
 
   it('crafts armor: raises shielding', () => {

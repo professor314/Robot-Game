@@ -10,7 +10,7 @@ export type RecipeCost = ReadonlyArray<readonly [string, number]>;
 
 /** What crafting a recipe does. New upgrade types add a kind here and a handler in `craft`. */
 export type RecipeEffect =
-  | { kind: 'battery'; integrity: number } // restore integrity now (consumable)
+  | { kind: 'battery'; integrity: number } // craft a carryable repair cell (used later with B)
   | { kind: 'maxIntegrity'; amount: number } // permanently raise max integrity (+ heal)
   | { kind: 'weapon'; processing: number } // raise attack output / weapon tier
   | { kind: 'armor'; shielding: number } // raise damage reduction
@@ -39,8 +39,8 @@ export interface Recipe {
 export const RECIPES: Recipe[] = [
   {
     id: 'battery',
-    name: 'Power Battery',
-    description: 'A charged cell. Restores 40 integrity when crafted.',
+    name: 'Repair Cell',
+    description: 'A carryable charge. Craft one, then press B to restore 40 integrity mid-fight.',
     cost: [
       ['coolant cell', 2],
       ['wire coil', 1],

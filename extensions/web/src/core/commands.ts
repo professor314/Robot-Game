@@ -16,6 +16,7 @@ export type Command =
   | { type: 'interact' } // mine / heal / install / read log / vendor (context)
   | { type: 'craft'; recipeId: string }
   | { type: 'buy'; goodId: string } // purchase from the vendor (credits)
+  | { type: 'useItem'; itemId: string } // use a carryable consumable (e.g. a repair cell)
   | { type: 'wait' };
 
 /** Convenience constructors. */
@@ -30,5 +31,6 @@ export const Commands = {
   interact: (): Command => ({ type: 'interact' }),
   craft: (recipeId: string): Command => ({ type: 'craft', recipeId }),
   buy: (goodId: string): Command => ({ type: 'buy', goodId }),
+  useItem: (itemId: string): Command => ({ type: 'useItem', itemId }),
   wait: (): Command => ({ type: 'wait' }),
 };

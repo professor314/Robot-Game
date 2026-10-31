@@ -538,10 +538,14 @@ export class PlannerAgent {
       const dir = this.stepTowardTile(station.x, station.y);
       if (dir) return { command: Commands.move(dir), action: 'walk', detail: 'to heal station' };
     }
-    // Craft a battery if possible.
+    // Use a stocked repair cell if we have one (carryable heal, works mid-fight).
+    if (w.progression.countOf('repair cell') > 0) {
+      return { command: Commands.useItem('repair cell'), action: 'heal', detail: 'repair cell' };
+    }
+    // Otherwise craft one if we can (it stocks a cell; we'll use it next step).
     const battery = recipeById('battery');
     if (battery && w.progression.knownRecipes.has('battery') && w.progression.hasMaterials(battery.cost)) {
-      return { command: Commands.craft('battery'), action: 'craft', detail: 'battery heal' };
+      return { command: Commands.craft('battery'), action: 'craft', detail: 'craft repair cell' };
     }
     // Vendor repair if in the vendor room and affordable.
     if (w.player.roomKey === map.vendorRoom) {

@@ -150,14 +150,24 @@ export interface KeyCardSeed {
   roomKey: string;
   /** The (open-reachable) room where the card is found. */
   foundInRoomKey: string;
+  /**
+   * The color (hex) shared by this key card and the doors it opens, so a player can match a
+   * card to its locked door at a glance. Each key gets a distinct hue.
+   */
+  color: number;
 }
 
-/** Key cards and the rooms they gate. */
+/** Key cards and the rooms they gate. Each key/door pair has a matching color. */
 export const KEY_CARDS: KeyCardSeed[] = [
-  { id: 'dock-key', name: 'Docking Clearance', roomKey: 'Docking Port', foundInRoomKey: 'Reactor Terminal' },
-  { id: 'data-key', name: 'Data Core Pass', roomKey: 'Data Core', foundInRoomKey: 'Maintenance Shaft' },
-  { id: 'drift-key', name: 'Drift Beacon', roomKey: 'Debris Drift', foundInRoomKey: 'Cargo Wreck' },
+  { id: 'dock-key', name: 'Docking Clearance', roomKey: 'Docking Port', foundInRoomKey: 'Reactor Terminal', color: 0xffb86c },
+  { id: 'data-key', name: 'Data Core Pass', roomKey: 'Data Core', foundInRoomKey: 'Maintenance Shaft', color: 0x8be9fd },
+  { id: 'drift-key', name: 'Drift Beacon', roomKey: 'Debris Drift', foundInRoomKey: 'Cargo Wreck', color: 0xff92d0 },
 ];
+
+/** The color shared by a key card and the doors it opens, or undefined if unkeyed. */
+export function keyColorFor(keyId: string): number | undefined {
+  return KEY_CARDS.find((k) => k.id === keyId)?.color;
+}
 
 /** Map of roomKey → required key id for quick lookup. */
 export const ROOM_LOCKS: Record<string, string> = Object.fromEntries(

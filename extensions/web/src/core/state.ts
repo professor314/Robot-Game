@@ -506,8 +506,33 @@ export class WorldState {
       case 'buy':
         this.buy(cmd.goodId);
         break;
+      case 'useItem':
+        this.useItem(cmd.itemId);
+        break;
       default:
         break;
+    }
+  }
+
+  /** Use a carryable consumable from the inventory. Currently: the Repair Cell (heal). */
+  private useItem(itemId: string): void {
+    if (itemId === 'repair cell') {
+      if (this.progression.countOf('repair cell') <= 0) {
+        this.events.emit({ type: 'log', message: 'No repair cells', tone: 'bad' });
+        return;
+      }
+      const p = this.player;
+      if (p.stats.integrity >= p.stats.maxIntegrity) {
+        this.events.emit({ type: 'log', message: 'Integrity already full', tone: 'info' });
+        return;
+      }
+      this.progression.addToInventory('repair cell', -1);
+      const before = p.stats.integrity;
+      p.stats.integrity += 40;
+      clampIntegrity(p.stats);
+      const amount = p.stats.integrity - before;
+      this.events.emit({ type: 'healed', amount, integrity: p.stats.integrity });
+      this.events.emit({ type: 'log', message: `Repair Cell: +${amount} integrity`, tone: 'good' });
     }
   }
 
@@ -706,8 +731,9 @@ export class WorldState {
     const eff = recipe.effect;
     switch (eff.kind) {
       case 'battery':
-        p.stats.integrity += eff.integrity;
-        clampIntegrity(p.stats);
+        // Crafting a Repair Cell stocks a carryable consumable (used later with the B key /
+        // the `useItem` command), rather than healing on the spot — useful mid-fight.
+        this.progression.addToInventory('repair cell', 1);
         break;
       case 'maxIntegrity':
         p.stats.maxIntegrity += eff.amount;
@@ -1226,8 +1252,14 @@ export class WorldState {
     const nx = player.x + dx;
     const ny = player.y + dy;
 
+    // Transition through a door when either (a) the step lands on this room's door tile, or
+    // (b) the player is already standing on the door tile for `dir` and steps outward. Case (b)
+    // lets you leave directly from a doorway (e.g. to flee a boss waiting just inside), which
+    // otherwise reads as a wall because the outward tile is out of bounds.
     const door = room.doorTile(dir);
-    if (door && nx === door.x && ny === door.y) {
+    const steppingOntoDoor = door && nx === door.x && ny === door.y;
+    const onDoorSteppingOut = door && player.x === door.x && player.y === door.y;
+    if (steppingOntoDoor || onDoorSteppingOut) {
       this.transition(dir);
       return;
     }

@@ -50,8 +50,8 @@ each in there when the feature that uses it ships.
   the single generic `items/component.svg` on the map and in pickups.
 - **New enemies** (`art/enemies/`): `brute`, `splitter`, `medic`, `turret`, `swarm` — five new
   archetypes beyond the shipping five, for future brains.
-- **Ending** (`art/ending/`): `earth`, `starfield`, `ship`, `course-marker` for the
-  fly-home-to-Earth departure sequence.
+- **Ending** (`art/ending/`): `earth`, `starfield`, `ship` are now shown on the victory screen
+  (`GameWonScene`) as the fly-home-to-Earth departure; `course-marker` remains available.
 - **Second biome** (`art/tiles2/`): `floor-hull/ice/bio` + `wall-hull/ice/bio` — a distinct
   exterior/frozen/organic tile set for expanding the map into new zones.
 - **Pickups** (`art/pickups/`): `credits`, `repair`, `shield`, `ammo`, `map-fragment`.

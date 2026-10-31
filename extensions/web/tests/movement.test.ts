@@ -68,4 +68,15 @@ describe('player movement and collision', () => {
     world.apply(Commands.move('east'));
     expect(world.player.x).toBe(beforeX); // blocked by the enemy
   });
+
+  it('can leave through a doorway directly from the door tile (flee past a boss)', () => {
+    const world = new WorldState();
+    // Stand on the north door tile of Main Corridor and step north to transition out, even
+    // though the outward tile is "out of bounds" — you should exit, not hit a wall.
+    const door = world.currentRoom.doorTile('north')!;
+    world.player.x = door.x;
+    world.player.y = door.y;
+    world.apply(Commands.move('north'));
+    expect(world.player.roomKey).toBe('Repair Bay');
+  });
 });

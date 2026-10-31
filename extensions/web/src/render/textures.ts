@@ -71,6 +71,16 @@ const ITEM_FILES: Record<string, string> = {
   projectile: 'items/projectile.svg',
 };
 
+/** Ending scene art (Earth / starfield / departing ship), shown on the victory screen. */
+const ENDING_FILES: Record<string, { file: string; w: number; h: number }> = {
+  earth: { file: 'ending/earth.svg', w: 256, h: 256 },
+  starfield: { file: 'ending/starfield.svg', w: 512, h: 512 },
+  ship: { file: 'ending/ship.svg', w: 256, h: 160 },
+};
+
+/** Texture key for an ending-scene image. */
+export const texEnding = (name: string): string => `ending-${name}`;
+
 /** Room-themed furniture prop art, keyed by PropKind. */
 const PROP_FILES: Record<string, string> = {
   controlStation: 'props/control-station.svg',
@@ -115,6 +125,7 @@ export function loadArt(scene: Phaser.Scene): void {
   for (const [kind, file] of Object.entries(JUNK_FILES)) svg(texJunk(kind), file, JUNK_RES, JUNK_RES);
   for (const [name, file] of Object.entries(ITEM_FILES)) svg(texItem(name), file, JUNK_RES, JUNK_RES);
   for (const [kind, file] of Object.entries(PROP_FILES)) svg(texProp(kind), file, JUNK_RES, JUNK_RES);
+  for (const [name, { file, w, h }] of Object.entries(ENDING_FILES)) svg(texEnding(name), file, w, h);
 }
 
 /** True once the core SVG art has loaded (checked via a representative texture). */

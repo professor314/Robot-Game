@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ENDING_LINES } from '../data/story';
+import { texEnding } from './textures';
 
 /** Scene key for the victory / departure ending. */
 export const GAMEWON_SCENE = 'GameWon';
@@ -29,7 +30,30 @@ export class GameWonScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const cx = width / 2;
 
-    this.add.rectangle(0, 0, width, height, 0x04060c, 0.92).setOrigin(0, 0).setInteractive();
+    this.add.rectangle(0, 0, width, height, 0x04060c, 0.95).setOrigin(0, 0).setInteractive();
+
+    // Departure scene: a starfield backdrop, Earth in the distance, and the restored ship
+    // flying toward it. Degrades to the text-only ending if the art isn't available.
+    if (this.textures.exists(texEnding('starfield'))) {
+      const stars = this.add.image(cx, height / 2, texEnding('starfield'))
+        .setAlpha(0.5)
+        .setDisplaySize(Math.max(width, 512), Math.max(height, 512));
+      stars.setDepth(-2);
+    }
+    if (this.textures.exists(texEnding('earth'))) {
+      this.add.image(width - 150, height - 160, texEnding('earth')).setScale(0.8).setDepth(-1);
+    }
+    if (this.textures.exists(texEnding('ship'))) {
+      const ship = this.add.image(-120, height - 220, texEnding('ship')).setDepth(0);
+      // Fly the ship across toward Earth, then gently bob.
+      this.tweens.add({
+        targets: ship,
+        x: width - 320,
+        y: height - 200,
+        duration: 4000,
+        ease: 'Sine.easeInOut',
+      });
+    }
 
     this.add
       .text(cx, 70, 'SHIP RESTORED', {
