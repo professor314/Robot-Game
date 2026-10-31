@@ -70,3 +70,13 @@ off as completed.
 - Preserve Core/Render split, determinism under seed, and the neon-SVG art style throughout.
 - Bosses: **7 guardians (one per ship component) + 1 major boss** = 8 total; the major boss is
   balanced to be very hard without several crafted upgrades (weapon, armor, max integrity).
+
+### Shipping a game change to the live website
+
+The playable game at `https://imadestuff.com/play/robot-game/` is a **built copy** hosted from a
+separate repo (`imadestuff-blog`). Pushing THIS repo does NOT update the website. To update the
+live game: (1) build + test + push here, (2) in the blog repo run `./refresh-robot-game.sh` to
+rebuild and refresh `imadestuff-blog/static/robot-game/`, (3) run the blog's `./deploy.sh`,
+(4) commit the blog repo. The blog's deploy uses `aws s3 sync --delete`, so the game survives
+only because it lives in the blog's `static/robot-game/` (which Hugo copies into `public/`).
+Full details are in the blog's steering doc: `.kiro-webpage/steering/imadestuff-blog.md`.
