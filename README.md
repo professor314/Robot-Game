@@ -81,6 +81,7 @@ dotnet test      # xUnit tests over RobotGame.Core
 | Space / F | Attack an adjacent hostile |
 | Shift | Dash (i-frames, cooldown) |
 | R | Ranged attack (once a ranged weapon is crafted) |
+| B | Use a crafted Repair Cell (heal mid-fight) |
 | E | Interact: mine / repair / install a component / read a log |
 | Q / Z | Overclock / Nanite Repair |
 | I / C | Inventory / Crafting panel |
@@ -133,18 +134,31 @@ Given the same seed and action sequence, a run is reproducible. Two example agen
 else pursue, else explore). In a dev build, `window.robotAgent` lets an external script drive
 the *live* on-screen game through the same Core commands.
 
+### Winnability guard
+
+`src/agent/` also contains a goal-directed `PlannerAgent` (with room-graph + in-room
+pathfinding and a data-derived objective map) that plays the game to completion. It is wired
+into a regression guard so a change to the game data/mechanics can't silently make the game
+impossible to finish:
+
+```bash
+npm run beat     # runs tests/winnability.test.ts (pathfinding + "the game is still beatable")
+```
+
+See `src/agent/README.md` for details.
+
 ## Deploying as a page on the blog
 
 The build is configured with `base: './'` (relative asset paths) so it can be hosted under a
-sub-path, not just a site root. To embed it as a page on the `imadestuff-blog` Hugo site:
+sub-path. It is deployed live as a page on the `imadestuff-blog` Hugo site at
+**https://imadestuff.com/play/robot-game/** (embedded in an iframe), with the game bundle living
+in the blog's `static/robot-game/`.
 
-1. `cd extensions/web && npm run build` to produce `dist/`.
-2. Copy the contents of `dist/` into the Hugo site's `static/` under a sub-path, e.g.
-   `static/robot-game/`.
-3. Add a page that points at it — either link to `/robot-game/index.html` directly, or embed
-   it in a page with an `<iframe src="/robot-game/" ...>`.
-4. Because `base` is relative, the game loads correctly from `/robot-game/` without further
-   config. Single-player ships as static files with no server-side runtime.
+To ship a game update to the site: build + test here, then from the blog repo run
+`./refresh-robot-game.sh` (rebuilds the game and refreshes `static/robot-game/`), then the
+blog's `./deploy.sh`. The blog's deploy uses `aws s3 sync --delete`, so the live game survives
+only because it lives in `static/robot-game/`; the full workflow and that caveat are documented
+in the blog's steering doc (`.kiro-webpage/steering/imadestuff-blog.md`).
 
 ## Improvements over the original
 
@@ -157,6 +171,8 @@ sub-path, not just a site root. To embed it as a page on the `imadestuff-blog` H
   missions, 8 bosses (7 guardians + 1 major), key-card-gated rooms, dash and ranged combat with
   telegraphs and knockback, a credits vendor, a station map, discoverable logs, and four
   balanced-but-flavored chassis.
+- A self-play `PlannerAgent` + winnability test prove the game remains beatable end-to-end
+  (`npm run beat`), guarding against changes that would make it impossible to finish.
 
 ## Known limitations
 
@@ -166,6 +182,7 @@ sub-path, not just a site root. To embed it as a page on the `imadestuff-blog` H
 - Multiplayer is deferred: the web game's Core is architected for it (authoritative state,
   serializable commands/events, room-as-state-partition), but the Colyseus server is a later
   phase.
-- Inventory/skills *panel views* in the web HUD are minimal; the underlying progression systems
-  are complete.
+- The expansion art set in `public/assets/art/` (bosses, components, new enemies, second biome,
+  pickups, weapon/status/UI icons) is authored ahead of the mechanics and not yet all wired into
+  the game — see `ASSETS.md`.
 ```
