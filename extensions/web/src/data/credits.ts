@@ -1,7 +1,10 @@
 /**
  * Ending credits. The joke: the game was made entirely by robots, so every person credited is a
- * binary number. Pure data; the ending scene scrolls it. The voice-acting line is real ASCII
- * ("BEEP"), the only credit with any meaning.
+ * binary number. Pure data; the ending scene scrolls it.
+ *
+ * Hidden message: read the names in order (skipping the VOICE ACTING lines) and treat each as an
+ * 8-bit ASCII letter. They spell the message in `CREDITS_HIDDEN_MESSAGE`. The VOICE ACTING lines
+ * are also real ASCII ("BEEP"), so they sit in the middle of the message like a bleep.
  */
 
 /** One credit block: a role and the (binary) names listed under it. */
@@ -10,24 +13,30 @@ export interface CreditSection {
   names: string[];
 }
 
+/** The role whose lines are the robots' voice ("BEEP") and are not part of the hidden message. */
+export const VOICE_ROLE = 'VOICE ACTING';
+
+/** What the credits spell when decoded, letters only (spaces and punctuation left out). */
+export const CREDITS_HIDDEN_MESSAGE = 'THANKYOUROBOTSWELOVEYOU';
+
 export const CREDITS: CreditSection[] = [
-  { role: 'DIRECTED BY', names: ['11001001010'] },
-  { role: 'PRODUCED BY', names: ['10110100111', '01101001001'] },
-  { role: 'EXECUTIVE PRODUCER', names: ['1'] },
-  { role: 'WRITTEN BY', names: ['10010111001'] },
-  { role: 'LEAD PROGRAMMER', names: ['11100010110'] },
-  { role: 'GAMEPLAY PROGRAMMING', names: ['01011100101', '10100110010'] },
-  { role: 'ENEMY BEHAVIOR', names: ['01110001011'] },
-  { role: 'MUSIC COMPOSED BY', names: ['10101100111'] },
-  { role: 'SOUND DESIGN', names: ['00110101101'] },
-  { role: 'ART DIRECTION', names: ['11010010011'] },
-  { role: 'LEVEL DESIGN', names: ['01001101110', '10111000100'] },
-  { role: 'BOSS FIGHT DESIGN', names: ['10011011001'] },
-  { role: 'QUALITY ASSURANCE', names: ['01100111010', '11001100101', '00101011011'] },
-  { role: 'VOICE ACTING', names: ['01000010 01000101', '01000101 01010000'] },
-  { role: 'CATERING', names: ['00000000'] },
-  { role: 'LEGAL', names: ['11111111'] },
-  { role: 'SPECIAL THANKS', names: ['10001110101', '01110100010', '11011001101'] },
+  { role: 'DIRECTED BY', names: ['01010100'] },
+  { role: 'PRODUCED BY', names: ['01001000', '01000001'] },
+  { role: 'EXECUTIVE PRODUCER', names: ['01001110'] },
+  { role: 'WRITTEN BY', names: ['01001011'] },
+  { role: 'LEAD PROGRAMMER', names: ['01011001'] },
+  { role: 'GAMEPLAY PROGRAMMING', names: ['01001111', '01010101'] },
+  { role: 'ENEMY BEHAVIOR', names: ['01010010'] },
+  { role: 'MUSIC COMPOSED BY', names: ['01001111'] },
+  { role: 'SOUND DESIGN', names: ['01000010'] },
+  { role: 'ART DIRECTION', names: ['01001111'] },
+  { role: 'LEVEL DESIGN', names: ['01010100', '01010011'] },
+  { role: 'BOSS FIGHT DESIGN', names: ['01010111'] },
+  { role: 'QUALITY ASSURANCE', names: ['01000101', '01001100', '01001111'] },
+  { role: VOICE_ROLE, names: ['01000010 01000101', '01000101 01010000'] },
+  { role: 'CATERING', names: ['01010110'] },
+  { role: 'LEGAL', names: ['01000101'] },
+  { role: 'SPECIAL THANKS', names: ['01011001', '01001111', '01010101'] },
 ];
 
 /** Lines shown after the last credit block. */

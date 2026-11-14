@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CREDITS, CREDITS_FOOTER } from '../src/data/credits';
+import { CREDITS, CREDITS_FOOTER, CREDITS_HIDDEN_MESSAGE, VOICE_ROLE } from '../src/data/credits';
 import {
   BOSS_THEME,
   BUILD_THEME,
@@ -29,7 +29,7 @@ describe('ending credits', () => {
   });
 
   it('spells BEEP in ASCII for the voice acting credit', () => {
-    const voice = CREDITS.find((s) => s.role === 'VOICE ACTING');
+    const voice = CREDITS.find((s) => s.role === VOICE_ROLE);
     expect(voice).toBeDefined();
     const text = voice!.names
       .join(' ')
@@ -37,6 +37,18 @@ describe('ending credits', () => {
       .map((byte) => String.fromCharCode(parseInt(byte, 2)))
       .join('');
     expect(text).toBe('BEEP');
+  });
+
+  it('hides the message in the names: one 8-bit ASCII letter per name, skipping the voice lines', () => {
+    const decoded = CREDITS.filter((s) => s.role !== VOICE_ROLE)
+      .flatMap((s) => s.names)
+      .map((name) => {
+        expect(name).toMatch(/^[01]{8}$/);
+        return String.fromCharCode(parseInt(name, 2));
+      })
+      .join('');
+    expect(decoded).toBe(CREDITS_HIDDEN_MESSAGE);
+    expect(CREDITS_HIDDEN_MESSAGE).toBe('THANKYOUROBOTSWELOVEYOU');
   });
 
   it('has a footer', () => {
