@@ -174,6 +174,91 @@ export const TITLE_THEME: Track = {
   drums: { gain: 0.12, pattern: fourBars(DRUM_BAR) },
 };
 
+// --- Victory song: the main theme's harmony and melodic shape, slowed down and opened up ---
+// Eight bars of Am, F, C, G, Am, F, G, C. The last bar lands on C major so the loop ends on a
+// resolved, hopeful chord. Same voices as the main theme (triangle bass, pulse arp and lead).
+
+/** One slow bass bar: root, fifth, octave, fifth, a quarter note each. */
+function victoryBassBar(root: string, rootOct: number, fifth: string, fifthOct: number): Step[] {
+  return [
+    { midi: n(root, rootOct), steps: 4 },
+    { midi: n(fifth, fifthOct), steps: 4 },
+    { midi: n(root, rootOct + 1), steps: 4 },
+    { midi: n(fifth, fifthOct), steps: 4 },
+  ];
+}
+
+/** One bar of eighth-note arpeggio (a gentler cousin of the main theme's sixteenths). */
+function victoryArpBar(root: string, third: string, fifth: string, oct: number): Step[] {
+  const seq: [string, number][] = [
+    [root, oct], [third, oct], [fifth, oct], [root, oct + 1],
+    [fifth, oct], [third, oct], [fifth, oct], [third, oct],
+  ];
+  return seq.map(([name, o]) => ({ midi: n(name, o), steps: 2 }));
+}
+
+const VICTORY_BASS: Step[] = [
+  ...victoryBassBar('A', 2, 'E', 3), // Am
+  ...victoryBassBar('F', 2, 'C', 3), // F
+  ...victoryBassBar('C', 3, 'G', 3), // C
+  ...victoryBassBar('G', 2, 'D', 3), // G
+  ...victoryBassBar('A', 2, 'E', 3), // Am
+  ...victoryBassBar('F', 2, 'C', 3), // F
+  ...victoryBassBar('G', 2, 'D', 3), // G
+  ...victoryBassBar('C', 3, 'G', 3), // C
+];
+
+const VICTORY_ARP: Step[] = [
+  ...victoryArpBar('A', 'C', 'E', 4), // Am
+  ...victoryArpBar('F', 'A', 'C', 4), // F
+  ...victoryArpBar('C', 'E', 'G', 4), // C
+  ...victoryArpBar('G', 'B', 'D', 4), // G
+  ...victoryArpBar('A', 'C', 'E', 4), // Am
+  ...victoryArpBar('F', 'A', 'C', 4), // F
+  ...victoryArpBar('G', 'B', 'D', 4), // G
+  ...victoryArpBar('C', 'E', 'G', 4), // C
+];
+
+/** The victory melody: the exploration lead's opening shape (E-A-G-E), stretched into a song. */
+const VICTORY_LEAD: Step[] = [
+  // Bar 1 (Am)
+  { midi: n('E', 5), steps: 6 }, { midi: n('A', 5), steps: 2 }, { midi: n('G', 5), steps: 4 }, { midi: n('E', 5), steps: 4 },
+  // Bar 2 (F)
+  { midi: n('F', 5), steps: 6 }, { midi: n('A', 5), steps: 2 }, { midi: n('C', 6), steps: 4 }, { midi: n('A', 5), steps: 4 },
+  // Bar 3 (C)
+  { midi: n('G', 5), steps: 6 }, { midi: n('E', 5), steps: 2 }, { midi: n('G', 5), steps: 4 }, { midi: n('C', 6), steps: 4 },
+  // Bar 4 (G)
+  { midi: n('D', 6), steps: 6 }, { midi: n('B', 5), steps: 2 }, { midi: n('A', 5), steps: 4 }, { midi: n('G', 5), steps: 4 },
+  // Bar 5 (Am), climbing higher this time
+  { midi: n('E', 5), steps: 6 }, { midi: n('A', 5), steps: 2 }, { midi: n('C', 6), steps: 4 }, { midi: n('E', 6), steps: 4 },
+  // Bar 6 (F)
+  { midi: n('F', 6), steps: 6 }, { midi: n('E', 6), steps: 2 }, { midi: n('C', 6), steps: 4 }, { midi: n('A', 5), steps: 4 },
+  // Bar 7 (G)
+  { midi: n('D', 6), steps: 4 }, { midi: n('B', 5), steps: 4 }, { midi: n('G', 5), steps: 4 },
+  { midi: n('A', 5), steps: 2 }, { midi: n('B', 5), steps: 2 },
+  // Bar 8 (C): resolve and rest
+  { midi: n('C', 6), steps: 12 }, { midi: null, steps: 4 },
+];
+
+/** A soft march: kick, hat, snare, hat, one hit per beat. */
+const DRUM_BAR_VICTORY: DrumStep[] = [
+  { hit: 'kick', steps: 4 }, { hit: 'hat', steps: 4 }, { hit: 'snare', steps: 4 }, { hit: 'hat', steps: 4 },
+];
+
+const eightBars = <T,>(bar: T[]): T[] => [...bar, ...bar, ...bar, ...bar, ...bar, ...bar, ...bar, ...bar];
+
+/** The ending song: the main tune at a walking pace, played while the credits roll. */
+export const VICTORY_THEME: Track = {
+  bpm: 76,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.5, pattern: VICTORY_BASS },
+    { voice: 'pulse', gain: 0.12, pattern: VICTORY_ARP },
+    { voice: 'pulse', gain: 0.26, pattern: VICTORY_LEAD },
+  ],
+  drums: { gain: 0.2, pattern: eightBars(DRUM_BAR_VICTORY) },
+};
+
 /** Steps in the longest line of a track (its loop length). */
 function trackSteps(track: Track): number {
   const channelMax = Math.max(...track.channels.map((c) => c.pattern.reduce((s, p) => s + p.steps, 0)));

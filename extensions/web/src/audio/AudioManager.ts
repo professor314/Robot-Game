@@ -6,13 +6,17 @@ import {
   MAJOR_BOSS_THEME,
   TITLE_THEME,
   Track,
+  VICTORY_THEME,
   scheduleTrack,
 } from './theme';
 
 /** Which music context is active. */
-export type MusicContext = 'title' | 'exploration' | 'combat' | 'boss' | 'majorBoss';
+export type MusicContext = 'title' | 'exploration' | 'combat' | 'boss' | 'majorBoss' | 'victory';
 
 const STORAGE_KEY = 'robot-game.audio';
+
+/** Master scale on music so the slider's full range sits at a comfortable level (also applies to saved settings). */
+const MUSIC_HEADROOM = 0.4;
 
 interface AudioSettings {
   musicVolume: number;
@@ -86,6 +90,26 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Cut the music immediately and stop scheduling. Notes already queued are silenced by
+   * swapping in a fresh music bus (the old one is disconnected), so nothing rings out.
+   */
+  hush(): void {
+    this.stopMusic();
+    if (!this.ctx || !this.musicGain) return;
+    this.musicGain.disconnect();
+    this.musicGain = this.ctx.createGain();
+    this.musicGain.connect(this.ctx.destination);
+    this.applyVolumes();
+  }
+
+  /** Cut whatever is playing and start `context` from its first note (no waiting for a loop end). */
+  playFromStart(context: MusicContext): void {
+    this.hush();
+    this.context = context;
+    this.startMusic();
+  }
+
   /** Switch music context; the new variant takes over at the next loop boundary. */
   setContext(context: MusicContext): void {
     this.context = context;
@@ -129,6 +153,8 @@ export class AudioManager {
         return BOSS_THEME;
       case 'majorBoss':
         return MAJOR_BOSS_THEME;
+      case 'victory':
+        return VICTORY_THEME;
       default:
         return EXPLORATION_THEME;
     }
@@ -151,7 +177,9 @@ export class AudioManager {
   }
 
   private applyVolumes(): void {
-    if (this.musicGain) this.musicGain.gain.value = this.settings.muted ? 0 : this.settings.musicVolume;
+    if (this.musicGain) {
+      this.musicGain.gain.value = this.settings.muted ? 0 : this.settings.musicVolume * MUSIC_HEADROOM;
+    }
     if (this.sfxGain) this.sfxGain.gain.value = this.settings.muted ? 0 : 1;
   }
 

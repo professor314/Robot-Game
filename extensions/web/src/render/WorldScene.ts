@@ -455,6 +455,8 @@ export class WorldScene extends Phaser.Scene {
         this.state.events.emit({ type: 'log', message: `Audio ${muted ? 'muted' : 'on'}` });
         return;
       }
+      // The world is frozen during the game-over and ending screens; ignore gameplay keys there.
+      if (this.gameOver) return;
       if (ATTACK_KEYS.has(ev.code)) {
         ev.preventDefault();
         this.state.apply(Commands.attack());
@@ -710,10 +712,13 @@ export class WorldScene extends Phaser.Scene {
   /** Show the victory ending scene. */
   private showGameWon(): void {
     this.gameOver = true; // freeze world input/update
-    this.audio.setContext('exploration');
+    // Silence the boss/exploration loop; the victory song starts when the ship powers up.
+    this.audio.hush();
     this.scene.launch('GameWon', {
+      onPowerUp: () => this.audio.playFromStart('victory'),
       onContinue: () => {
         this.gameOver = false;
+        this.audio.playFromStart('exploration');
         this.state.story.enterFreeRoam();
       },
     });
