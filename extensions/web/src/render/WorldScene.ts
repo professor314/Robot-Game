@@ -7,7 +7,8 @@ import { TileKind } from '../core/tiles';
 import { Direction, ROOM_LOCKS, keyColorFor } from '../data/world';
 import { MISSIONS } from '../data/missions';
 import { ALL_BOSSES } from '../data/bosses';
-import { AudioManager } from '../audio/AudioManager';
+import type { MusicContext } from '../audio/AudioManager';
+import { gameAudio } from '../audio/shared';
 import { Persistence } from './persistence';
 import { gameFeel, toggleGameFeel } from './settings';
 import {
@@ -75,8 +76,10 @@ export class WorldScene extends Phaser.Scene {
   private offsetY = 0;
   /** Whether SVG art is available (vs. placeholder textures). */
   private useArt = false;
-  private readonly audio = new AudioManager();
+  private readonly audio = gameAudio;
   private audioStarted = false;
+  /** True while the wake-up song was last chosen because the intro overlay was showing. */
+  private introMusic = false;
   /** True once the player is defeated; freezes the world until a restart. */
   private gameOver = false;
   /** Chosen bot id and whether to resume a save, passed in from the select screen. */
@@ -134,8 +137,20 @@ export class WorldScene extends Phaser.Scene {
     this.scene.launch('Hud', { world: this });
 
     // Show the wake-up intro on a fresh game (not when resuming, and not if already seen).
-    if (this.state.story.phase === 'intro' && !this.state.story.introSeen) {
+    const showIntro = this.state.story.phase === 'intro' && !this.state.story.introSeen;
+    if (showIntro) {
       this.scene.launch('Intro', { world: this });
+    }
+
+    // If the pick-your-bot screen already unlocked audio, carry on from there: the wake-up song
+    // under the intro, or the exploration theme when resuming a save. Otherwise the first key
+    // press starts the music (see bindInput). `introMusic` flips on once update() sees the intro
+    // overlay actually running (it launches on the next frame).
+    this.introMusic = false;
+    if (this.audio.hasContext) {
+      this.audio.resume();
+      this.audio.playFromStart(showIntro ? 'wake' : 'exploration');
+      this.audioStarted = true;
     }
   }
 
@@ -167,12 +182,22 @@ export class WorldScene extends Phaser.Scene {
     if (this.gameOver) return;
     this.state.tick(delta);
     this.syncHostiles();
-    // Music context: boss theme if a live boss shares the room (major boss → its own theme),
-    // else combat if any hostile is here, else exploration.
+    // Music context: the wake-up song while the intro is showing; otherwise the boss theme if a
+    // live boss shares the room (major boss: its own theme), else combat if any hostile is here,
+    // else exploration. Leaving the intro cuts straight to the world's music.
+    const intro = this.scene.isActive('Intro');
+    const wanted = intro ? 'wake' : this.worldMusic();
+    if (this.introMusic && !intro && this.audioStarted) this.audio.playFromStart(wanted);
+    else this.audio.setContext(wanted);
+    this.introMusic = intro;
+  }
+
+  /** The music context for the room the player is in (not counting the intro). */
+  private worldMusic(): MusicContext {
     const here = this.state.hostilesInCurrentRoom();
     const boss = here.find((h) => h.bossId);
-    if (boss) this.audio.setContext(boss.major ? 'majorBoss' : 'boss');
-    else this.audio.setContext(here.length > 0 ? 'combat' : 'exploration');
+    if (boss) return boss.major ? 'majorBoss' : 'boss';
+    return here.length > 0 ? 'combat' : 'exploration';
   }
 
   /** Freeze the world and show the GAME OVER overlay with a restart option. */

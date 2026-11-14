@@ -81,7 +81,7 @@ export function playNote(
 }
 
 /** A percussion hit kind for the drum channel. */
-export type DrumKind = 'kick' | 'snare' | 'hat';
+export type DrumKind = 'kick' | 'snare' | 'hat' | 'clank' | 'hiss';
 
 /**
  * Play a single drum hit at `time` through `out` at `gain`. Kick is a fast pitch-dropping sine
@@ -113,8 +113,30 @@ export function playDrum(
     return;
   }
 
-  // Snare / hat: noise through a band/high-pass, short envelope.
-  const dur = kind === 'snare' ? 0.14 : 0.05;
+  // Clank: two detuned square tones through band-pass filters, a short metallic hit (the
+  // assembly-line sound in the build-a-robot song).
+  if (kind === 'clank') {
+    const dur = 0.1;
+    env.gain.setValueAtTime(peak, time);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+    for (const freq of [523, 811]) {
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const band = ctx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = freq * 1.5;
+      band.Q.value = 3;
+      osc.connect(band).connect(env);
+      osc.start(time);
+      osc.stop(time + dur);
+    }
+    return;
+  }
+
+  // Snare / hat / hiss: noise through a band/high-pass, short envelope. Hiss is a long, bright
+  // burst, like steam venting.
+  const dur = kind === 'snare' ? 0.14 : kind === 'hiss' ? 0.3 : 0.05;
   env.gain.setValueAtTime(peak, time);
   env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
   const length = Math.floor(ctx.sampleRate * dur);
@@ -130,7 +152,7 @@ export function playDrum(
     filter.Q.value = 0.7;
   } else {
     filter.type = 'highpass';
-    filter.frequency.value = 7000;
+    filter.frequency.value = kind === 'hiss' ? 3500 : 7000;
   }
   src.connect(filter).connect(env);
   src.start(time);

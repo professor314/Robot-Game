@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { gameAudio } from '../audio/shared';
 import { chassisById } from '../data/chassis';
 import { Persistence } from './persistence';
 import { PLAYER_BOTS, texPlayer } from './textures';
@@ -93,6 +94,36 @@ export class SelectBotScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
       cont.on('pointerdown', () => this.continueSaved());
     }
+
+    this.startMusic(width, height);
+  }
+
+  /**
+   * Play the "being built" song. Browsers keep audio locked until a click or key press, so this
+   * waits for the first one (a hint says so); if audio is already unlocked (coming back from a
+   * game over) the song starts at once.
+   */
+  private startMusic(width: number, height: number): void {
+    const hint = this.add
+      .text(width / 2, height - 18, '♪ press any key or click for sound', {
+        fontFamily: 'monospace',
+        fontSize: '11px',
+        color: '#6c7693',
+      })
+      .setOrigin(0.5);
+
+    if (gameAudio.resume()) {
+      const cancel = gameAudio.whenRunning(() => {
+        hint.setVisible(false);
+        gameAudio.playFromStart('build');
+      });
+      this.events.once(Phaser.Scenes.Events.SHUTDOWN, cancel);
+    }
+    const unlock = (): void => {
+      gameAudio.resume();
+    };
+    this.input.once('pointerdown', unlock);
+    this.input.keyboard?.once('keydown', unlock);
   }
 
   /** Start a fresh game with the chosen bot. */

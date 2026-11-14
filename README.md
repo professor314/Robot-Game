@@ -17,6 +17,12 @@ The two rewrites deliberately share no code (different languages, different plat
 they share is *lineage*: the web game inherits the original's tile-room idea and the author's
 Evennia **space MUD** (`space-mud`) world and combat model.
 
+**Music and the ending.** All sound is synthesized at runtime in a late-80s chiptune style. There
+are songs for the pick-your-bot screen (an assembly line that builds up as it loops), the
+wake-up intro, exploration, combat, bosses, and the victory ending. To watch the ending without
+beating the game, open the web build with `?ending` on the end of the URL (for example
+`/robot-game/?ending`, or `http://localhost:5173/?ending` under `npm run dev`).
+
 ## Why the original can't run as-is
 
 The 2014 game depended on a SQL Server `.mdf` database (via typed DataSets) for its inventory,

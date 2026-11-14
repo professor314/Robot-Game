@@ -259,6 +259,176 @@ export const VICTORY_THEME: Track = {
   drums: { gain: 0.2, pattern: eightBars(DRUM_BAR_VICTORY) },
 };
 
+// --- Build-a-robot song (the pick-your-bot screen) ---
+// An assembly line, written as a song. Eight bars of A minor with a flat second (B-flat) for
+// grit: only the machinery at first, then each loop the layers arrive, the way a robot goes
+// together. Bass and drums run the whole time, the stiff arpeggio joins at bar 3, and the lead
+// "voice" switches on at bar 5.
+
+const rest = (steps: number): Step => ({ midi: null, steps });
+
+/** The grinding bass riff (16 steps). */
+const BUILD_RIFF: Step[] = [
+  { midi: n('A', 2), steps: 2 }, { midi: n('A', 2), steps: 1 }, { midi: n('A', 2), steps: 1 }, { midi: n('C', 3), steps: 2 },
+  { midi: n('A', 2), steps: 2 }, { midi: n('A', 2), steps: 2 }, { midi: n('A#', 2), steps: 2 }, { midi: n('A', 2), steps: 2 },
+  { midi: n('E', 3), steps: 2 },
+];
+
+/** The riff's turnaround, used on the last bar of each four. */
+const BUILD_TURN: Step[] = [
+  { midi: n('A', 2), steps: 2 }, { midi: n('A', 2), steps: 1 }, { midi: n('A', 2), steps: 1 }, { midi: n('C', 3), steps: 2 },
+  { midi: n('A', 2), steps: 2 }, { midi: n('D', 3), steps: 2 }, { midi: n('E', 3), steps: 2 }, { midi: n('A#', 2), steps: 2 },
+  { midi: n('A', 2), steps: 2 },
+];
+
+const BUILD_BASS: Step[] = [
+  ...BUILD_RIFF, ...BUILD_RIFF, ...BUILD_RIFF, ...BUILD_TURN,
+  ...BUILD_RIFF, ...BUILD_RIFF, ...BUILD_RIFF, ...BUILD_TURN,
+];
+
+/** A machine-stiff sixteenth-note ostinato: A and E, with a flat-second twist at the end. */
+const BUILD_ARP_BAR: Step[] = [
+  'A3', 'E4', 'A3', 'E4', 'A3', 'E4', 'A3', 'F4',
+  'A3', 'E4', 'A3', 'E4', 'A3', 'E4', 'A#3', 'B3',
+].map((name) => {
+  const m = /^([A-G]#?)(\d)$/.exec(name)!;
+  return { midi: n(m[1], Number(m[2])), steps: 1 };
+});
+
+const BUILD_ARP: Step[] = [rest(32), ...BUILD_ARP_BAR, ...BUILD_ARP_BAR, ...BUILD_ARP_BAR, ...BUILD_ARP_BAR, ...BUILD_ARP_BAR, ...BUILD_ARP_BAR];
+
+/** Call-and-response lead, bars 5 to 8 (the first four bars are silent). */
+const BUILD_LEAD: Step[] = [
+  rest(64),
+  // Bar 5
+  { midi: n('E', 5), steps: 2 }, rest(2), { midi: n('E', 5), steps: 2 }, rest(2),
+  { midi: n('F', 5), steps: 2 }, { midi: n('E', 5), steps: 2 }, rest(2), { midi: n('C', 5), steps: 2 },
+  // Bar 6
+  { midi: n('A', 4), steps: 2 }, rest(2), { midi: n('A', 4), steps: 2 }, rest(2),
+  { midi: n('B', 4), steps: 2 }, { midi: n('C', 5), steps: 2 }, rest(2), { midi: n('E', 5), steps: 2 },
+  // Bar 7 (as bar 5)
+  { midi: n('E', 5), steps: 2 }, rest(2), { midi: n('E', 5), steps: 2 }, rest(2),
+  { midi: n('F', 5), steps: 2 }, { midi: n('E', 5), steps: 2 }, rest(2), { midi: n('C', 5), steps: 2 },
+  // Bar 8: climbs, then holds
+  { midi: n('A', 4), steps: 2 }, { midi: n('C', 5), steps: 2 }, { midi: n('E', 5), steps: 2 }, { midi: n('F', 5), steps: 2 },
+  { midi: n('E', 5), steps: 4 }, { midi: n('C', 5), steps: 2 }, rest(2),
+];
+
+/** Bars 1 and 2: just kick and clank. */
+const BUILD_DRUMS_SPARSE: DrumStep[] = [
+  { hit: 'kick', steps: 4 }, { hit: 'clank', steps: 2 }, { hit: null, steps: 2 },
+  { hit: 'kick', steps: 4 }, { hit: 'clank', steps: 2 }, { hit: null, steps: 2 },
+];
+
+/** Four on the floor, with clanks on the off-beats. */
+const BUILD_DRUMS_FULL: DrumStep[] = [
+  { hit: 'kick', steps: 2 }, { hit: 'hat', steps: 2 }, { hit: 'kick', steps: 2 }, { hit: 'clank', steps: 2 },
+  { hit: 'kick', steps: 2 }, { hit: 'hat', steps: 2 }, { hit: 'kick', steps: 2 }, { hit: 'clank', steps: 2 },
+];
+
+/** The same beat, ending in a burst of steam. */
+const BUILD_DRUMS_STEAM: DrumStep[] = [
+  { hit: 'kick', steps: 2 }, { hit: 'hat', steps: 2 }, { hit: 'kick', steps: 2 }, { hit: 'clank', steps: 2 },
+  { hit: 'kick', steps: 2 }, { hit: 'hat', steps: 2 }, { hit: 'hiss', steps: 4 },
+];
+
+/** The pick-your-bot song: a robot being assembled, as music. */
+export const BUILD_THEME: Track = {
+  bpm: 112,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.5, pattern: BUILD_BASS },
+    { voice: 'pulse', gain: 0.14, pattern: BUILD_ARP },
+    { voice: 'pulse', gain: 0.24, pattern: BUILD_LEAD },
+  ],
+  drums: {
+    gain: 0.34,
+    pattern: [
+      ...BUILD_DRUMS_SPARSE, ...BUILD_DRUMS_SPARSE,
+      ...BUILD_DRUMS_FULL, ...BUILD_DRUMS_STEAM,
+      ...BUILD_DRUMS_FULL, ...BUILD_DRUMS_FULL,
+      ...BUILD_DRUMS_FULL, ...BUILD_DRUMS_STEAM,
+    ],
+  },
+};
+
+// --- Waking-up song (the opening, while the intro text is on screen) ---
+// A robot coming online. A single low note, a slow heartbeat, a few high blips like systems
+// powering on, then a slow arpeggio climbing under a melody that finally stands up. Same voices
+// and the same Am-F-C-G harmony as the main theme, at a crawl.
+
+const WAKE_BASS: Step[] = [
+  { midi: n('A', 2), steps: 32 }, // bars 1-2: one low drone
+  { midi: n('C', 3), steps: 16 }, // C
+  { midi: n('G', 2), steps: 16 }, // G
+  { midi: n('A', 2), steps: 16 }, // Am
+  { midi: n('F', 2), steps: 16 }, // F
+  { midi: n('G', 2), steps: 16 }, // G
+  { midi: n('C', 3), steps: 16 }, // C
+];
+
+/** Four-note rising arpeggio, one note per beat, for each chord. */
+function wakeArpBar(a: string, aOct: number, b: string, bOct: number, c: string, cOct: number, d: string, dOct: number): Step[] {
+  return [
+    { midi: n(a, aOct), steps: 4 }, { midi: n(b, bOct), steps: 4 },
+    { midi: n(c, cOct), steps: 4 }, { midi: n(d, dOct), steps: 4 },
+  ];
+}
+
+const WAKE_ARP: Step[] = [
+  rest(32),
+  ...wakeArpBar('C', 4, 'E', 4, 'G', 4, 'C', 5), // C
+  ...wakeArpBar('G', 3, 'B', 3, 'D', 4, 'G', 4), // G
+  ...wakeArpBar('A', 3, 'C', 4, 'E', 4, 'A', 4), // Am
+  ...wakeArpBar('F', 3, 'A', 3, 'C', 4, 'F', 4), // F
+  ...wakeArpBar('G', 3, 'B', 3, 'D', 4, 'G', 4), // G
+  ...wakeArpBar('C', 4, 'E', 4, 'G', 4, 'C', 5), // C
+];
+
+/** Blips for four bars, then the melody for four. Every bar is 16 steps. */
+const WAKE_LEAD: Step[] = [
+  // Bars 1-4: sparse blips, like status lights coming on
+  rest(6), { midi: n('E', 6), steps: 1 }, rest(5), { midi: n('E', 6), steps: 1 }, rest(3),
+  rest(4), { midi: n('E', 6), steps: 1 }, rest(3), { midi: n('A', 5), steps: 1 }, rest(7),
+  rest(2), { midi: n('C', 6), steps: 1 }, rest(5), { midi: n('E', 6), steps: 1 }, rest(2), { midi: n('A', 5), steps: 1 }, rest(4),
+  rest(8), { midi: n('G', 5), steps: 1 }, rest(3), { midi: n('B', 5), steps: 1 }, rest(3),
+  // Bars 5-8: the melody rises
+  { midi: n('E', 5), steps: 8 }, { midi: n('A', 5), steps: 8 }, // Am
+  { midi: n('A', 5), steps: 8 }, { midi: n('C', 6), steps: 8 }, // F
+  { midi: n('D', 6), steps: 8 }, { midi: n('B', 5), steps: 8 }, // G
+  { midi: n('C', 6), steps: 12 }, rest(4), // C
+];
+
+/** A heartbeat: lub-dub, once per bar. */
+const WAKE_HEART: DrumStep[] = [
+  { hit: 'kick', steps: 1 }, { hit: null, steps: 2 }, { hit: 'kick', steps: 1 }, { hit: null, steps: 12 },
+];
+
+/** The heartbeat plus soft hats, once the robot is up and moving. */
+const WAKE_HEART_HATS: DrumStep[] = [
+  { hit: 'kick', steps: 1 }, { hit: null, steps: 2 }, { hit: 'kick', steps: 1 }, { hit: null, steps: 4 },
+  { hit: 'hat', steps: 2 }, { hit: null, steps: 2 }, { hit: 'hat', steps: 2 }, { hit: null, steps: 2 },
+];
+
+/** The opening song: a robot waking up. */
+export const WAKE_THEME: Track = {
+  bpm: 66,
+  stepsPerBeat: 4,
+  channels: [
+    { voice: 'triangle', gain: 0.45, pattern: WAKE_BASS },
+    { voice: 'pulse', gain: 0.13, pattern: WAKE_ARP },
+    { voice: 'pulse', gain: 0.22, pattern: WAKE_LEAD },
+  ],
+  drums: {
+    gain: 0.22,
+    pattern: [
+      { hit: null, steps: 16 },
+      ...WAKE_HEART, ...WAKE_HEART, ...WAKE_HEART,
+      ...WAKE_HEART_HATS, ...WAKE_HEART_HATS, ...WAKE_HEART_HATS, ...WAKE_HEART_HATS,
+    ],
+  },
+};
+
 /** Steps in the longest line of a track (its loop length). */
 function trackSteps(track: Track): number {
   const channelMax = Math.max(...track.channels.map((c) => c.pattern.reduce((s, p) => s + p.steps, 0)));

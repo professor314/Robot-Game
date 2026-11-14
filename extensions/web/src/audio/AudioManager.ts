@@ -1,17 +1,27 @@
 import { SfxName, playSfx } from './sfx';
 import {
   BOSS_THEME,
+  BUILD_THEME,
   COMBAT_THEME,
   EXPLORATION_THEME,
   MAJOR_BOSS_THEME,
   TITLE_THEME,
   Track,
   VICTORY_THEME,
+  WAKE_THEME,
   scheduleTrack,
 } from './theme';
 
 /** Which music context is active. */
-export type MusicContext = 'title' | 'exploration' | 'combat' | 'boss' | 'majorBoss' | 'victory';
+export type MusicContext =
+  | 'title'
+  | 'exploration'
+  | 'combat'
+  | 'boss'
+  | 'majorBoss'
+  | 'victory'
+  | 'build'
+  | 'wake';
 
 const STORAGE_KEY = 'robot-game.audio';
 
@@ -69,6 +79,32 @@ export class AudioManager {
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     return true;
+  }
+
+  /** True once an audio context exists (created by the first `resume()`). */
+  get hasContext(): boolean {
+    return this.ctx !== null;
+  }
+
+  /**
+   * Run `cb` as soon as the audio context is actually running. Browsers keep audio locked until
+   * a click or key press, so a context created at page load starts suspended. Returns a function
+   * that cancels the wait (call it when the scene that asked is leaving).
+   */
+  whenRunning(cb: () => void): () => void {
+    const ctx = this.ctx;
+    if (!ctx) return () => undefined;
+    if (ctx.state === 'running') {
+      cb();
+      return () => undefined;
+    }
+    const onChange = (): void => {
+      if (ctx.state !== 'running') return;
+      ctx.removeEventListener('statechange', onChange);
+      cb();
+    };
+    ctx.addEventListener('statechange', onChange);
+    return () => ctx.removeEventListener('statechange', onChange);
   }
 
   /** Start the music loop in the current context. No-op if audio isn't available. */
@@ -155,6 +191,10 @@ export class AudioManager {
         return MAJOR_BOSS_THEME;
       case 'victory':
         return VICTORY_THEME;
+      case 'build':
+        return BUILD_THEME;
+      case 'wake':
+        return WAKE_THEME;
       default:
         return EXPLORATION_THEME;
     }

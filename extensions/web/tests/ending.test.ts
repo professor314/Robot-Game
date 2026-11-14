@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { CREDITS, CREDITS_FOOTER } from '../src/data/credits';
 import {
   BOSS_THEME,
+  BUILD_THEME,
   COMBAT_THEME,
   EXPLORATION_THEME,
   MAJOR_BOSS_THEME,
   TITLE_THEME,
   VICTORY_THEME,
+  WAKE_THEME,
   Track,
 } from '../src/audio/theme';
 
@@ -39,6 +41,46 @@ describe('ending credits', () => {
 
   it('has a footer', () => {
     expect(CREDITS_FOOTER.length).toBeGreaterThan(0);
+  });
+});
+
+describe('opening songs', () => {
+  const songs: [string, Track][] = [
+    ['build-a-robot', BUILD_THEME],
+    ['waking up', WAKE_THEME],
+  ];
+
+  it.each(songs)('%s has every channel and the drums the same length so the loop lines up', (_name, track) => {
+    const lengths = [...track.channels.map((c) => steps(c.pattern)), steps(track.drums.pattern)];
+    expect(new Set(lengths).size).toBe(1);
+    expect(lengths[0]).toBe(8 * 16);
+  });
+
+  it.each(songs)('%s only uses real MIDI notes', (_name, track) => {
+    for (const channel of track.channels) {
+      for (const step of channel.pattern) {
+        if (step.midi !== null) {
+          expect(step.midi).toBeGreaterThanOrEqual(24);
+          expect(step.midi).toBeLessThanOrEqual(108);
+        }
+      }
+    }
+  });
+
+  it('the waking-up song is the slowest of the main-style themes', () => {
+    for (const other of [EXPLORATION_THEME, COMBAT_THEME, BOSS_THEME, MAJOR_BOSS_THEME, TITLE_THEME, BUILD_THEME]) {
+      expect(WAKE_THEME.bpm).toBeLessThan(other.bpm);
+    }
+  });
+
+  it('the build song starts with machinery only: the lead is silent for its first four bars', () => {
+    const lead = BUILD_THEME.channels[2].pattern;
+    let consumed = 0;
+    for (const step of lead) {
+      if (consumed >= 64) break;
+      expect(step.midi).toBeNull();
+      consumed += step.steps;
+    }
   });
 });
 
