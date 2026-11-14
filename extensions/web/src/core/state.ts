@@ -1302,9 +1302,18 @@ export class WorldState {
     const back = OPPOSITE[dir];
     const entry = toRoom.doorTile(back);
     const inward = DELTA[dir];
-    const x = (entry?.x ?? Math.floor(ROOM_WIDTH / 2)) + inward.dx;
-    const y = (entry?.y ?? Math.floor(ROOM_HEIGHT / 2)) + inward.dy;
+    let x = (entry?.x ?? Math.floor(ROOM_WIDTH / 2)) + inward.dx;
+    let y = (entry?.y ?? Math.floor(ROOM_HEIGHT / 2)) + inward.dy;
 
+    // If an enemy is standing just inside the door, don't land on top of it. Stop on the door
+    // tile instead (hostiles can't occupy door tiles), so the enemy blocks the way in but the
+    // player can still fight it from the doorway.
+    if (entry && !this.tileFreeOfActors(toKey, x, y, this.player.id)) {
+      x = entry.x;
+      y = entry.y;
+    }
+
+    this.player.facing = FACING[dir];
     this.player.roomKey = toKey;
     this.player.x = x;
     this.player.y = y;

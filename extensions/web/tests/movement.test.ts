@@ -79,4 +79,24 @@ describe('player movement and collision', () => {
     world.apply(Commands.move('north'));
     expect(world.player.roomKey).toBe('Repair Bay');
   });
+
+  it('stops on the door tile (not on the enemy) when an enemy waits just inside the door', () => {
+    const world = new WorldState();
+    const toRoom = world.graph.rooms.get('Repair Bay')!;
+    const entry = toRoom.doorTile('south')!;
+    const h = world.hostiles[0];
+    h.roomKey = 'Repair Bay';
+    h.defeated = false;
+    h.x = entry.x;
+    h.y = entry.y - 1; // the tile just inside the south door
+    const door = world.currentRoom.doorTile('north')!;
+    world.player.x = door.x;
+    world.player.y = door.y;
+    world.apply(Commands.move('north'));
+    expect(world.player.roomKey).toBe('Repair Bay');
+    expect(world.player.x).toBe(entry.x);
+    expect(world.player.y).toBe(entry.y); // in the doorway, enemy untouched
+    world.apply(Commands.move('north')); // can't walk through it
+    expect(world.player.y).toBe(entry.y);
+  });
 });
