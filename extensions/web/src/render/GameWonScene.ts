@@ -16,7 +16,8 @@ export interface GameWonData {
 
 // Timeline, in milliseconds from the start of the scene.
 const SUBTITLE_START = 800;
-const SUBTITLE_EACH = 2200;
+/** How long each story line stays on screen (it fades in and out inside this time). */
+const SUBTITLE_EACH = 4400;
 const POWER_UP_AT = 1800;
 const LAUNCH_AT = 4200;
 const CREDITS_START_AT = 3000;
@@ -344,9 +345,9 @@ export class GameWonScene extends Phaser.Scene {
       onComplete: () => ring.destroy(),
     });
 
-    // Title card for the restored ship.
+    // Title card for the restored ship: held for about twice as long as before.
     this.tweens.add({ targets: this.heading, alpha: 1, delay: 450, duration: 500 });
-    this.tweens.add({ targets: this.heading, alpha: 0, delay: 4200, duration: 800 });
+    this.tweens.add({ targets: this.heading, alpha: 0, delay: 7450, duration: 800 });
   }
 
   /** Jump to the end card (credits finished, or skipped). */
