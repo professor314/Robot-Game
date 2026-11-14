@@ -86,6 +86,11 @@ export class AudioManager {
     return this.ctx !== null;
   }
 
+  /** True once the browser has let the audio context run (after a click or key press). */
+  get unlocked(): boolean {
+    return this.ctx?.state === 'running';
+  }
+
   /**
    * Run `cb` as soon as the audio context is actually running. Browsers keep audio locked until
    * a click or key press, so a context created at page load starts suspended. Returns a function

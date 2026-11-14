@@ -99,31 +99,56 @@ export class SelectBotScene extends Phaser.Scene {
   }
 
   /**
-   * Play the "being built" song. Browsers keep audio locked until a click or key press, so this
-   * waits for the first one (a hint says so); if audio is already unlocked (coming back from a
-   * game over) the song starts at once.
+   * Play the "being built" song. Browsers keep audio locked until the first click or key press,
+   * so if audio is still locked just after this screen opens, a "power on" prompt covers it.
+   * The first click or key press unlocks audio and starts the song (and that click is used up
+   * by the prompt, so it does not also pick a robot). If audio is already unlocked (coming back
+   * from a game over) the song starts at once and no prompt shows.
    */
   private startMusic(width: number, height: number): void {
-    const hint = this.add
-      .text(width / 2, height - 18, '♪ press any key or click for sound', {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: '#6c7693',
-      })
-      .setOrigin(0.5);
+    if (!gameAudio.resume()) return; // no Web Audio in this browser: nothing to unlock
 
-    if (gameAudio.resume()) {
-      const cancel = gameAudio.whenRunning(() => {
-        hint.setVisible(false);
-        gameAudio.playFromStart('build');
-      });
-      this.events.once(Phaser.Scenes.Events.SHUTDOWN, cancel);
-    }
+    let gate: Phaser.GameObjects.GameObject[] = [];
+    let gestured = false;
+    const closeGate = (): void => {
+      gate.forEach((o) => o.destroy());
+      gate = [];
+    };
+
+    const cancel = gameAudio.whenRunning(() => {
+      closeGate();
+      gameAudio.playFromStart('build');
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, cancel);
+
     const unlock = (): void => {
+      gestured = true;
       gameAudio.resume();
+      closeGate();
     };
     this.input.once('pointerdown', unlock);
     this.input.keyboard?.once('keydown', unlock);
+
+    // A moment of grace so a browser that allows autoplay never flashes the prompt.
+    this.time.delayedCall(250, () => {
+      if (gestured || gameAudio.unlocked) return;
+      const dim = this.add
+        .rectangle(0, 0, width, height, 0x0d0d1a, 0.92)
+        .setOrigin(0, 0)
+        .setDepth(100)
+        .setInteractive({ useHandCursor: true });
+      const label = this.add
+        .text(width / 2, height / 2, '♪  CLICK OR PRESS ANY KEY\nTO POWER ON', {
+          fontFamily: 'monospace',
+          fontSize: '28px',
+          color: '#8be9fd',
+          align: 'center',
+        })
+        .setOrigin(0.5)
+        .setDepth(101);
+      this.tweens.add({ targets: label, alpha: 0.35, duration: 800, yoyo: true, repeat: -1 });
+      gate = [dim, label];
+    });
   }
 
   /** Start a fresh game with the chosen bot. */
